@@ -1,0 +1,11 @@
+version: 2
+
+models:
+  - name: fct_daily_revenue
+    columns:
+      - name: order_date
+        data_tests: [unique, not_null]
+      - name: revenue
+        data_tests:
+          - value_between:
+              arguments: {min_value: 0, max_value: 2000000}

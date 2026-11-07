@@ -1,0 +1,25 @@
+version: 2
+
+models:
+  - name: stg_orders
+    description: Orders in the canonical shape, whatever shape the source sent them in.
+    columns:
+      - name: order_id
+        data_tests: [unique, not_null]
+      - name: customer_id
+        data_tests: [not_null]
+      - name: placed_at
+        data_tests:
+          - not_null
+          - timestamp_between:
+              arguments: {min_value: "2026-01-01", max_value: "2026-12-31"}
+      - name: amount
+        data_tests:
+          - not_null
+          - value_between:
+              arguments: {min_value: 1, max_value: 100000}
+      - name: status
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments: {values: [placed, shipped, delivered, cancelled]}

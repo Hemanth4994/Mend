@@ -1,0 +1,11 @@
+# Used by dbt via --profiles-dir. MEND_DB is the DuckDB file dlt loads into.
+mend:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('MEND_DB', '../../data/mend.duckdb') }}"
+      schema: analytics
+      threads: 1
+      settings:
+        TimeZone: UTC

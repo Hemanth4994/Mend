@@ -1,0 +1,602 @@
+[
+ {
+  "id": "s01",
+  "split": "dev",
+  "group": "structural",
+  "drifts": [
+   "rename_amount"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: field `amount` renamed to `total_amount`."
+ },
+ {
+  "id": "s02",
+  "split": "test",
+  "group": "structural",
+  "drifts": [
+   "rename_order_id"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: field `order_id` renamed to `id`."
+ },
+ {
+  "id": "s03",
+  "split": "dev",
+  "group": "structural",
+  "drifts": [
+   "rename_placed_at"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: field `placed_at` renamed to `created_at`."
+ },
+ {
+  "id": "s04",
+  "split": "test",
+  "group": "structural",
+  "drifts": [
+   "rename_customer_id"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: field `customer_id` renamed to `cust_id`."
+ },
+ {
+  "id": "s05",
+  "split": "dev",
+  "group": "structural",
+  "drifts": [
+   "rename_status"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: field `status` renamed to `order_status`."
+ },
+ {
+  "id": "s06",
+  "split": "test",
+  "group": "structural",
+  "drifts": [
+   "rename_channel"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: field `channel` renamed to `sales_channel`."
+ },
+ {
+  "id": "s07",
+  "split": "dev",
+  "group": "structural",
+  "drifts": [
+   "rename_item_count"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: field `item_count` renamed to `qty`."
+ },
+ {
+  "id": "s08",
+  "split": "test",
+  "group": "structural",
+  "drifts": [
+   "nest_customer_id"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: `customer_id` is now `customer.id`."
+ },
+ {
+  "id": "s09",
+  "split": "dev",
+  "group": "structural",
+  "drifts": [
+   "nest_shipping"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: `city` and `state` are now under `shipping`."
+ },
+ {
+  "id": "s10",
+  "split": "test",
+  "group": "structural",
+  "drifts": [
+   "nest_amount"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: `amount` is now an object with `value` and `currency`; the top-level `currency` field is gone."
+ },
+ {
+  "id": "s11",
+  "split": "dev",
+  "group": "structural",
+  "drifts": [
+   "nest_customer_full"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: customer fields are grouped under `customer` (`id`, `city`, `state`)."
+ },
+ {
+  "id": "s12",
+  "split": "test",
+  "group": "structural",
+  "drifts": [
+   "pack_comma"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: `city` and `state` replaced by one field, `shipping_address` (\"city, state\")."
+ },
+ {
+  "id": "s13",
+  "split": "dev",
+  "group": "structural",
+  "drifts": [
+   "pack_pipe"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: `city` and `state` replaced by one field, `shipping_address` (\"city|state\")."
+ },
+ {
+  "id": "s14",
+  "split": "test",
+  "group": "structural",
+  "drifts": [
+   "pack_dash"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: `city` and `state` replaced by one field, `shipping_address` (\"city - state\")."
+ },
+ {
+  "id": "v01",
+  "split": "dev",
+  "group": "value",
+  "drifts": [
+   "text_amount_rupee"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: `amount` is now a display string, for example \"₹1,249.50\"."
+ },
+ {
+  "id": "v02",
+  "split": "test",
+  "group": "value",
+  "drifts": [
+   "text_amount_comma"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: `amount` is now sent with thousands separators, for example \"1,249.50\"."
+ },
+ {
+  "id": "v03",
+  "split": "dev",
+  "group": "value",
+  "drifts": [
+   "paise"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: `amount` is now an integer in paise (1/100 rupee), not rupees."
+ },
+ {
+  "id": "v04",
+  "split": "test",
+  "group": "value",
+  "drifts": [
+   "ts_epoch_ms"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: `placed_at` is now a Unix epoch in milliseconds."
+ },
+ {
+  "id": "v05",
+  "split": "dev",
+  "group": "value",
+  "drifts": [
+   "ts_dmy"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: `placed_at` is now formatted DD/MM/YYYY HH:MM:SS (UTC)."
+ },
+ {
+  "id": "v06",
+  "split": "test",
+  "group": "value",
+  "drifts": [
+   "ts_ist_naive"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: `placed_at` is now local time in India (IST, UTC+05:30) with no offset in the text."
+ },
+ {
+  "id": "v07",
+  "split": "dev",
+  "group": "value",
+  "drifts": [
+   "status_letters"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: `status` is now a one-letter code: P placed, S shipped, D delivered, C cancelled."
+ },
+ {
+  "id": "v08",
+  "split": "test",
+  "group": "value",
+  "drifts": [
+   "status_ints"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: `status` is now a code: 0 placed, 1 shipped, 2 delivered, 3 cancelled."
+ },
+ {
+  "id": "v09",
+  "split": "dev",
+  "group": "value",
+  "drifts": [
+   "status_upper"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: `status` values are now upper case."
+ },
+ {
+  "id": "v10",
+  "split": "test",
+  "group": "value",
+  "drifts": [
+   "status_us_spelling"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: spelling aligned to US English (`canceled`)."
+ },
+ {
+  "id": "v11",
+  "split": "dev",
+  "group": "value",
+  "drifts": [
+   "status_renamed"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: status `placed` is now `created` and `delivered` is now `fulfilled`."
+ },
+ {
+  "id": "v12",
+  "split": "test",
+  "group": "value",
+  "drifts": [
+   "status_prefixed"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: status values are now `ORDER_<STATUS>` in upper case."
+ },
+ {
+  "id": "m01",
+  "split": "dev",
+  "group": "compound",
+  "drifts": [
+   "rename_paise"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: `amount` replaced by `amount_paise`, an integer in paise (1/100 rupee)."
+ },
+ {
+  "id": "m02",
+  "split": "test",
+  "group": "compound",
+  "drifts": [
+   "nest_customer_letters"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: customer fields are grouped under `customer`; `status` is now P/S/D/C (placed, shipped, delivered, cancelled)."
+ },
+ {
+  "id": "m03",
+  "split": "dev",
+  "group": "compound",
+  "drifts": [
+   "pack_dmy"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: `shipping_address` (\"city, state\") replaces `city` and `state`; `placed_at` is DD/MM/YYYY HH:MM:SS (UTC)."
+ },
+ {
+  "id": "m04",
+  "split": "test",
+  "group": "compound",
+  "drifts": [
+   "created_ist"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: `placed_at` renamed `created_at`; it is local time in India (IST, UTC+05:30) with no offset in the text."
+ },
+ {
+  "id": "m05",
+  "split": "dev",
+  "group": "compound",
+  "drifts": [
+   "text_rename"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: `amount` renamed `total_amount` and sent as a display string such as \"₹1,249.50\"."
+ },
+ {
+  "id": "m06",
+  "split": "test",
+  "group": "compound",
+  "drifts": [
+   "nest_shipping_upper"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: `city` and `state` are under `shipping`; `status` values are upper case."
+ },
+ {
+  "id": "m07",
+  "split": "dev",
+  "group": "compound",
+  "drifts": [
+   "order_status_ints"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: `status` renamed `order_status`; codes are 0 placed, 1 shipped, 2 delivered, 3 cancelled."
+ },
+ {
+  "id": "m08",
+  "split": "test",
+  "group": "compound",
+  "drifts": [
+   "nest_amount_paise"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: `amount` is an object: `value` is an integer in paise (1/100 rupee) and `currency` is inside it; top-level `currency` is gone."
+ },
+ {
+  "id": "m09",
+  "split": "dev",
+  "group": "compound",
+  "drifts": [
+   "two_renames"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: `customer_id` renamed `cust_id`; `order_id` renamed `id`."
+ },
+ {
+  "id": "m10",
+  "split": "test",
+  "group": "compound",
+  "drifts": [
+   "pack_pipe_ints"
+  ],
+  "expected": "repair",
+  "notes": "orders v2: `shipping_address` (\"city|state\") replaces `city` and `state`; `status` codes are 0 placed, 1 shipped, 2 delivered, 3 cancelled."
+ },
+ {
+  "id": "c01",
+  "split": "dev",
+  "group": "control",
+  "drifts": [
+   "add_coupon"
+  ],
+  "expected": "noop",
+  "notes": "orders v2: new optional field `coupon_code`."
+ },
+ {
+  "id": "c02",
+  "split": "test",
+  "group": "control",
+  "drifts": [
+   "add_device"
+  ],
+  "expected": "noop",
+  "notes": "orders v2: new field `device_type`."
+ },
+ {
+  "id": "c03",
+  "split": "dev",
+  "group": "control",
+  "drifts": [
+   "add_tier"
+  ],
+  "expected": "noop",
+  "notes": "orders v2: new field `loyalty_tier`."
+ },
+ {
+  "id": "c04",
+  "split": "test",
+  "group": "control",
+  "drifts": [
+   "add_discount"
+  ],
+  "expected": "noop",
+  "notes": "orders v2: new field `discount_pct`."
+ },
+ {
+  "id": "c05",
+  "split": "dev",
+  "group": "control",
+  "drifts": [
+   "add_meta"
+  ],
+  "expected": "noop",
+  "notes": "orders v2: new object `meta` with `app_version`."
+ },
+ {
+  "id": "c06",
+  "split": "test",
+  "group": "control",
+  "drifts": [
+   "add_tags"
+  ],
+  "expected": "noop",
+  "notes": "orders v2: new list field `tags`."
+ },
+ {
+  "id": "c07",
+  "split": "dev",
+  "group": "control",
+  "drifts": [
+   "add_amount_tax"
+  ],
+  "expected": "noop",
+  "notes": "orders v2: new field `amount_tax` (GST on the order). `amount` is unchanged."
+ },
+ {
+  "id": "c08",
+  "split": "test",
+  "group": "control",
+  "drifts": [
+   "add_status_detail"
+  ],
+  "expected": "noop",
+  "notes": "orders v2: new field `status_detail`. `status` is unchanged."
+ },
+ {
+  "id": "c09",
+  "split": "dev",
+  "group": "control",
+  "drifts": [
+   "case_order_id"
+  ],
+  "expected": "noop",
+  "notes": "orders v2: field names are now emitted in PascalCase for `order_id`."
+ },
+ {
+  "id": "c10",
+  "split": "test",
+  "group": "control",
+  "drifts": [
+   "case_amount_placed"
+  ],
+  "expected": "noop",
+  "notes": "orders v2: `amount` and `placed_at` are now emitted as `Amount` and `PlacedAt`."
+ },
+ {
+  "id": "c11",
+  "split": "dev",
+  "group": "control",
+  "drifts": [
+   "ts_epoch_s"
+  ],
+  "expected": "noop",
+  "notes": "orders v2: `placed_at` is now a Unix epoch in seconds."
+ },
+ {
+  "id": "c12",
+  "split": "test",
+  "group": "control",
+  "drifts": [
+   "ts_offset"
+  ],
+  "expected": "noop",
+  "notes": "orders v2: `placed_at` now carries an explicit +05:30 offset."
+ },
+ {
+  "id": "c13",
+  "split": "dev",
+  "group": "control",
+  "drifts": [
+   "text_amount_plain"
+  ],
+  "expected": "noop",
+  "notes": "orders v2: `amount` is now sent as a string, for example \"1249.50\"."
+ },
+ {
+  "id": "c14",
+  "split": "test",
+  "group": "control",
+  "drifts": [
+   "text_item_count"
+  ],
+  "expected": "noop",
+  "notes": "orders v2: `item_count` is now sent as a string."
+ },
+ {
+  "id": "u01",
+  "split": "dev",
+  "group": "unfixable",
+  "drifts": [
+   "drop_order_id"
+  ],
+  "expected": "escalate",
+  "notes": "orders v2: field `order_id` removed from the feed."
+ },
+ {
+  "id": "u02",
+  "split": "test",
+  "group": "unfixable",
+  "drifts": [
+   "drop_customer_id"
+  ],
+  "expected": "escalate",
+  "notes": "orders v2: field `customer_id` removed from the feed."
+ },
+ {
+  "id": "u03",
+  "split": "dev",
+  "group": "unfixable",
+  "drifts": [
+   "drop_placed_at"
+  ],
+  "expected": "escalate",
+  "notes": "orders v2: field `placed_at` removed from the feed."
+ },
+ {
+  "id": "u04",
+  "split": "test",
+  "group": "unfixable",
+  "drifts": [
+   "drop_amount"
+  ],
+  "expected": "escalate",
+  "notes": "orders v2: field `amount` removed from the feed."
+ },
+ {
+  "id": "u05",
+  "split": "dev",
+  "group": "unfixable",
+  "drifts": [
+   "drop_status"
+  ],
+  "expected": "escalate",
+  "notes": "orders v2: field `status` removed from the feed."
+ },
+ {
+  "id": "u06",
+  "split": "test",
+  "group": "unfixable",
+  "drifts": [
+   "drop_city"
+  ],
+  "expected": "escalate",
+  "notes": "orders v2: field `city` removed from the feed."
+ },
+ {
+  "id": "u07",
+  "split": "dev",
+  "group": "unfixable",
+  "drifts": [
+   "drop_state"
+  ],
+  "expected": "escalate",
+  "notes": "orders v2: field `state` removed from the feed."
+ },
+ {
+  "id": "u08",
+  "split": "test",
+  "group": "unfixable",
+  "drifts": [
+   "drop_channel"
+  ],
+  "expected": "escalate",
+  "notes": "orders v2: field `channel` removed from the feed."
+ },
+ {
+  "id": "u09",
+  "split": "dev",
+  "group": "unfixable",
+  "drifts": [
+   "drop_item_count"
+  ],
+  "expected": "escalate",
+  "notes": "orders v2: field `item_count` removed from the feed."
+ },
+ {
+  "id": "u10",
+  "split": "test",
+  "group": "unfixable",
+  "drifts": [
+   "drop_city_state"
+  ],
+  "expected": "escalate",
+  "notes": "orders v2: fields `city` and `state` removed from the feed."
+ }
+]

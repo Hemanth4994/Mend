@@ -1,0 +1,1456 @@
+[
+ {
+  "id": "s01",
+  "split": "dev",
+  "group": "structural",
+  "drift": [
+   "rename_amount"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "amount"
+  ],
+  "failed_checks": [
+   "not_null_stg_orders_amount"
+  ],
+  "signals": {
+   "added": [
+    "total_amount"
+   ],
+   "went_null": [
+    "amount"
+   ]
+  },
+  "class": "loud"
+ },
+ {
+  "id": "s02",
+  "split": "test",
+  "group": "structural",
+  "drift": [
+   "rename_order_id"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "order_id",
+   "customer_id",
+   "placed_at",
+   "amount",
+   "status",
+   "city",
+   "state",
+   "channel",
+   "item_count"
+  ],
+  "failed_checks": [
+   "not_null_stg_orders_order_id"
+  ],
+  "signals": {
+   "added": [
+    "id"
+   ],
+   "went_null": [
+    "order_id"
+   ]
+  },
+  "class": "loud"
+ },
+ {
+  "id": "s03",
+  "split": "dev",
+  "group": "structural",
+  "drift": [
+   "rename_placed_at"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "placed_at"
+  ],
+  "failed_checks": [
+   "not_null_stg_orders_placed_at"
+  ],
+  "signals": {
+   "added": [
+    "created_at"
+   ],
+   "went_null": [
+    "placed_at"
+   ]
+  },
+  "class": "loud"
+ },
+ {
+  "id": "s04",
+  "split": "test",
+  "group": "structural",
+  "drift": [
+   "rename_customer_id"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "customer_id"
+  ],
+  "failed_checks": [
+   "not_null_stg_orders_customer_id"
+  ],
+  "signals": {
+   "added": [
+    "cust_id"
+   ],
+   "went_null": [
+    "customer_id"
+   ]
+  },
+  "class": "loud"
+ },
+ {
+  "id": "s05",
+  "split": "dev",
+  "group": "structural",
+  "drift": [
+   "rename_status"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "status"
+  ],
+  "failed_checks": [
+   "not_null_stg_orders_status"
+  ],
+  "signals": {
+   "added": [
+    "order_status"
+   ],
+   "went_null": [
+    "status"
+   ]
+  },
+  "class": "loud"
+ },
+ {
+  "id": "s06",
+  "split": "test",
+  "group": "structural",
+  "drift": [
+   "rename_channel"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "channel"
+  ],
+  "failed_checks": [],
+  "signals": {
+   "added": [
+    "sales_channel"
+   ],
+   "went_null": [
+    "channel"
+   ]
+  },
+  "class": "schema_only"
+ },
+ {
+  "id": "s07",
+  "split": "dev",
+  "group": "structural",
+  "drift": [
+   "rename_item_count"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "item_count"
+  ],
+  "failed_checks": [],
+  "signals": {
+   "added": [
+    "qty"
+   ],
+   "went_null": [
+    "item_count"
+   ]
+  },
+  "class": "schema_only"
+ },
+ {
+  "id": "s08",
+  "split": "test",
+  "group": "structural",
+  "drift": [
+   "nest_customer_id"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "customer_id"
+  ],
+  "failed_checks": [
+   "not_null_stg_orders_customer_id"
+  ],
+  "signals": {
+   "added": [
+    "customer__id"
+   ],
+   "went_null": [
+    "customer_id"
+   ]
+  },
+  "class": "loud"
+ },
+ {
+  "id": "s09",
+  "split": "dev",
+  "group": "structural",
+  "drift": [
+   "nest_shipping"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "city",
+   "state"
+  ],
+  "failed_checks": [],
+  "signals": {
+   "added": [
+    "shipping__city",
+    "shipping__state"
+   ],
+   "went_null": [
+    "city",
+    "state"
+   ]
+  },
+  "class": "schema_only"
+ },
+ {
+  "id": "s10",
+  "split": "test",
+  "group": "structural",
+  "drift": [
+   "nest_amount"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "amount",
+   "currency"
+  ],
+  "failed_checks": [
+   "not_null_stg_orders_amount"
+  ],
+  "signals": {
+   "added": [
+    "amount__value",
+    "amount__currency"
+   ],
+   "went_null": [
+    "amount",
+    "currency"
+   ]
+  },
+  "class": "loud"
+ },
+ {
+  "id": "s11",
+  "split": "dev",
+  "group": "structural",
+  "drift": [
+   "nest_customer_full"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "customer_id",
+   "city",
+   "state"
+  ],
+  "failed_checks": [
+   "not_null_stg_orders_customer_id"
+  ],
+  "signals": {
+   "added": [
+    "customer__id",
+    "customer__city",
+    "customer__state"
+   ],
+   "went_null": [
+    "customer_id",
+    "city",
+    "state"
+   ]
+  },
+  "class": "loud"
+ },
+ {
+  "id": "s12",
+  "split": "test",
+  "group": "structural",
+  "drift": [
+   "pack_comma"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "city",
+   "state"
+  ],
+  "failed_checks": [],
+  "signals": {
+   "added": [
+    "shipping_address"
+   ],
+   "went_null": [
+    "city",
+    "state"
+   ]
+  },
+  "class": "schema_only"
+ },
+ {
+  "id": "s13",
+  "split": "dev",
+  "group": "structural",
+  "drift": [
+   "pack_pipe"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "city",
+   "state"
+  ],
+  "failed_checks": [],
+  "signals": {
+   "added": [
+    "shipping_address"
+   ],
+   "went_null": [
+    "city",
+    "state"
+   ]
+  },
+  "class": "schema_only"
+ },
+ {
+  "id": "s14",
+  "split": "test",
+  "group": "structural",
+  "drift": [
+   "pack_dash"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "city",
+   "state"
+  ],
+  "failed_checks": [],
+  "signals": {
+   "added": [
+    "shipping_address"
+   ],
+   "went_null": [
+    "city",
+    "state"
+   ]
+  },
+  "class": "schema_only"
+ },
+ {
+  "id": "v01",
+  "split": "dev",
+  "group": "value",
+  "drift": [
+   "text_amount_rupee"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "amount"
+  ],
+  "failed_checks": [
+   "not_null_stg_orders_amount"
+  ],
+  "signals": {
+   "added": [
+    "amount__v_text"
+   ],
+   "went_null": [
+    "amount"
+   ]
+  },
+  "class": "loud"
+ },
+ {
+  "id": "v02",
+  "split": "test",
+  "group": "value",
+  "drift": [
+   "text_amount_comma"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "amount"
+  ],
+  "failed_checks": [
+   "not_null_stg_orders_amount"
+  ],
+  "signals": {
+   "added": [
+    "amount__v_text"
+   ],
+   "went_null": []
+  },
+  "class": "loud"
+ },
+ {
+  "id": "v03",
+  "split": "dev",
+  "group": "value",
+  "drift": [
+   "paise"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "amount"
+  ],
+  "failed_checks": [
+   "value_between_stg_orders_amount__100000__1"
+  ],
+  "signals": {
+   "added": [],
+   "went_null": []
+  },
+  "class": "loud"
+ },
+ {
+  "id": "v04",
+  "split": "test",
+  "group": "value",
+  "drift": [
+   "ts_epoch_ms"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "placed_at"
+  ],
+  "failed_checks": [
+   "not_null_stg_orders_placed_at"
+  ],
+  "signals": {
+   "added": [
+    "placed_at__v_bigint"
+   ],
+   "went_null": [
+    "placed_at"
+   ]
+  },
+  "class": "loud"
+ },
+ {
+  "id": "v05",
+  "split": "dev",
+  "group": "value",
+  "drift": [
+   "ts_dmy"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "placed_at"
+  ],
+  "failed_checks": [
+   "not_null_stg_orders_placed_at"
+  ],
+  "signals": {
+   "added": [
+    "placed_at__v_text"
+   ],
+   "went_null": [
+    "placed_at"
+   ]
+  },
+  "class": "loud"
+ },
+ {
+  "id": "v06",
+  "split": "test",
+  "group": "value",
+  "drift": [
+   "ts_ist_naive"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "placed_at"
+  ],
+  "failed_checks": [],
+  "signals": {
+   "added": [],
+   "went_null": []
+  },
+  "class": "undetected"
+ },
+ {
+  "id": "v07",
+  "split": "dev",
+  "group": "value",
+  "drift": [
+   "status_letters"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "status"
+  ],
+  "failed_checks": [
+   "accepted_values_stg_orders_status__placed__shipped__delivered__cancelled"
+  ],
+  "signals": {
+   "added": [],
+   "went_null": []
+  },
+  "class": "loud"
+ },
+ {
+  "id": "v08",
+  "split": "test",
+  "group": "value",
+  "drift": [
+   "status_ints"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "status"
+  ],
+  "failed_checks": [
+   "accepted_values_stg_orders_status__placed__shipped__delivered__cancelled"
+  ],
+  "signals": {
+   "added": [],
+   "went_null": []
+  },
+  "class": "loud"
+ },
+ {
+  "id": "v09",
+  "split": "dev",
+  "group": "value",
+  "drift": [
+   "status_upper"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "status"
+  ],
+  "failed_checks": [
+   "accepted_values_stg_orders_status__placed__shipped__delivered__cancelled"
+  ],
+  "signals": {
+   "added": [],
+   "went_null": []
+  },
+  "class": "loud"
+ },
+ {
+  "id": "v10",
+  "split": "test",
+  "group": "value",
+  "drift": [
+   "status_us_spelling"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "status"
+  ],
+  "failed_checks": [
+   "accepted_values_stg_orders_status__placed__shipped__delivered__cancelled"
+  ],
+  "signals": {
+   "added": [],
+   "went_null": []
+  },
+  "class": "loud"
+ },
+ {
+  "id": "v11",
+  "split": "dev",
+  "group": "value",
+  "drift": [
+   "status_renamed"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "status"
+  ],
+  "failed_checks": [
+   "accepted_values_stg_orders_status__placed__shipped__delivered__cancelled"
+  ],
+  "signals": {
+   "added": [],
+   "went_null": []
+  },
+  "class": "loud"
+ },
+ {
+  "id": "v12",
+  "split": "test",
+  "group": "value",
+  "drift": [
+   "status_prefixed"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "status"
+  ],
+  "failed_checks": [
+   "accepted_values_stg_orders_status__placed__shipped__delivered__cancelled"
+  ],
+  "signals": {
+   "added": [],
+   "went_null": []
+  },
+  "class": "loud"
+ },
+ {
+  "id": "m01",
+  "split": "dev",
+  "group": "compound",
+  "drift": [
+   "rename_paise"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "amount"
+  ],
+  "failed_checks": [
+   "not_null_stg_orders_amount"
+  ],
+  "signals": {
+   "added": [
+    "amount_paise"
+   ],
+   "went_null": [
+    "amount"
+   ]
+  },
+  "class": "loud"
+ },
+ {
+  "id": "m02",
+  "split": "test",
+  "group": "compound",
+  "drift": [
+   "nest_customer_letters"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "customer_id",
+   "status",
+   "city",
+   "state"
+  ],
+  "failed_checks": [
+   "accepted_values_stg_orders_status__placed__shipped__delivered__cancelled",
+   "not_null_stg_orders_customer_id"
+  ],
+  "signals": {
+   "added": [
+    "customer__id",
+    "customer__city",
+    "customer__state"
+   ],
+   "went_null": [
+    "customer_id",
+    "city",
+    "state"
+   ]
+  },
+  "class": "loud"
+ },
+ {
+  "id": "m03",
+  "split": "dev",
+  "group": "compound",
+  "drift": [
+   "pack_dmy"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "placed_at",
+   "city",
+   "state"
+  ],
+  "failed_checks": [
+   "not_null_stg_orders_placed_at"
+  ],
+  "signals": {
+   "added": [
+    "placed_at__v_text",
+    "shipping_address"
+   ],
+   "went_null": [
+    "placed_at",
+    "city",
+    "state"
+   ]
+  },
+  "class": "loud"
+ },
+ {
+  "id": "m04",
+  "split": "test",
+  "group": "compound",
+  "drift": [
+   "created_ist"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "placed_at"
+  ],
+  "failed_checks": [
+   "not_null_stg_orders_placed_at"
+  ],
+  "signals": {
+   "added": [
+    "created_at"
+   ],
+   "went_null": [
+    "placed_at"
+   ]
+  },
+  "class": "loud"
+ },
+ {
+  "id": "m05",
+  "split": "dev",
+  "group": "compound",
+  "drift": [
+   "text_rename"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "amount"
+  ],
+  "failed_checks": [
+   "not_null_stg_orders_amount"
+  ],
+  "signals": {
+   "added": [
+    "total_amount"
+   ],
+   "went_null": [
+    "amount"
+   ]
+  },
+  "class": "loud"
+ },
+ {
+  "id": "m06",
+  "split": "test",
+  "group": "compound",
+  "drift": [
+   "nest_shipping_upper"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "status",
+   "city",
+   "state"
+  ],
+  "failed_checks": [
+   "accepted_values_stg_orders_status__placed__shipped__delivered__cancelled"
+  ],
+  "signals": {
+   "added": [
+    "shipping__city",
+    "shipping__state"
+   ],
+   "went_null": [
+    "city",
+    "state"
+   ]
+  },
+  "class": "loud"
+ },
+ {
+  "id": "m07",
+  "split": "dev",
+  "group": "compound",
+  "drift": [
+   "order_status_ints"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "status"
+  ],
+  "failed_checks": [
+   "not_null_stg_orders_status"
+  ],
+  "signals": {
+   "added": [
+    "order_status"
+   ],
+   "went_null": [
+    "status"
+   ]
+  },
+  "class": "loud"
+ },
+ {
+  "id": "m08",
+  "split": "test",
+  "group": "compound",
+  "drift": [
+   "nest_amount_paise"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "amount",
+   "currency"
+  ],
+  "failed_checks": [
+   "not_null_stg_orders_amount"
+  ],
+  "signals": {
+   "added": [
+    "amount__value",
+    "amount__currency"
+   ],
+   "went_null": [
+    "amount",
+    "currency"
+   ]
+  },
+  "class": "loud"
+ },
+ {
+  "id": "m09",
+  "split": "dev",
+  "group": "compound",
+  "drift": [
+   "two_renames"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "order_id",
+   "customer_id",
+   "placed_at",
+   "amount",
+   "status",
+   "city",
+   "state",
+   "channel",
+   "item_count"
+  ],
+  "failed_checks": [
+   "not_null_stg_orders_customer_id",
+   "not_null_stg_orders_order_id"
+  ],
+  "signals": {
+   "added": [
+    "id",
+    "cust_id"
+   ],
+   "went_null": [
+    "order_id",
+    "customer_id"
+   ]
+  },
+  "class": "loud"
+ },
+ {
+  "id": "m10",
+  "split": "test",
+  "group": "compound",
+  "drift": [
+   "pack_pipe_ints"
+  ],
+  "expected": "repair",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "status",
+   "city",
+   "state"
+  ],
+  "failed_checks": [
+   "accepted_values_stg_orders_status__placed__shipped__delivered__cancelled"
+  ],
+  "signals": {
+   "added": [
+    "shipping_address"
+   ],
+   "went_null": [
+    "city",
+    "state"
+   ]
+  },
+  "class": "loud"
+ },
+ {
+  "id": "c01",
+  "split": "dev",
+  "group": "control",
+  "drift": [
+   "add_coupon"
+  ],
+  "expected": "noop",
+  "baseline_ok": true,
+  "error": null,
+  "columns_differ": null,
+  "failed_checks": [],
+  "signals": {
+   "added": [
+    "coupon_code"
+   ],
+   "went_null": []
+  },
+  "class": "harmless"
+ },
+ {
+  "id": "c02",
+  "split": "test",
+  "group": "control",
+  "drift": [
+   "add_device"
+  ],
+  "expected": "noop",
+  "baseline_ok": true,
+  "error": null,
+  "columns_differ": null,
+  "failed_checks": [],
+  "signals": {
+   "added": [
+    "device_type"
+   ],
+   "went_null": []
+  },
+  "class": "harmless"
+ },
+ {
+  "id": "c03",
+  "split": "dev",
+  "group": "control",
+  "drift": [
+   "add_tier"
+  ],
+  "expected": "noop",
+  "baseline_ok": true,
+  "error": null,
+  "columns_differ": null,
+  "failed_checks": [],
+  "signals": {
+   "added": [
+    "loyalty_tier"
+   ],
+   "went_null": []
+  },
+  "class": "harmless"
+ },
+ {
+  "id": "c04",
+  "split": "test",
+  "group": "control",
+  "drift": [
+   "add_discount"
+  ],
+  "expected": "noop",
+  "baseline_ok": true,
+  "error": null,
+  "columns_differ": null,
+  "failed_checks": [],
+  "signals": {
+   "added": [
+    "discount_pct"
+   ],
+   "went_null": []
+  },
+  "class": "harmless"
+ },
+ {
+  "id": "c05",
+  "split": "dev",
+  "group": "control",
+  "drift": [
+   "add_meta"
+  ],
+  "expected": "noop",
+  "baseline_ok": true,
+  "error": null,
+  "columns_differ": null,
+  "failed_checks": [],
+  "signals": {
+   "added": [
+    "meta__app_version"
+   ],
+   "went_null": []
+  },
+  "class": "harmless"
+ },
+ {
+  "id": "c06",
+  "split": "test",
+  "group": "control",
+  "drift": [
+   "add_tags"
+  ],
+  "expected": "noop",
+  "baseline_ok": true,
+  "error": null,
+  "columns_differ": null,
+  "failed_checks": [],
+  "signals": {
+   "added": [],
+   "went_null": []
+  },
+  "class": "harmless"
+ },
+ {
+  "id": "c07",
+  "split": "dev",
+  "group": "control",
+  "drift": [
+   "add_amount_tax"
+  ],
+  "expected": "noop",
+  "baseline_ok": true,
+  "error": null,
+  "columns_differ": null,
+  "failed_checks": [],
+  "signals": {
+   "added": [
+    "amount_tax"
+   ],
+   "went_null": []
+  },
+  "class": "harmless"
+ },
+ {
+  "id": "c08",
+  "split": "test",
+  "group": "control",
+  "drift": [
+   "add_status_detail"
+  ],
+  "expected": "noop",
+  "baseline_ok": true,
+  "error": null,
+  "columns_differ": null,
+  "failed_checks": [],
+  "signals": {
+   "added": [
+    "status_detail"
+   ],
+   "went_null": []
+  },
+  "class": "harmless"
+ },
+ {
+  "id": "c09",
+  "split": "dev",
+  "group": "control",
+  "drift": [
+   "case_order_id"
+  ],
+  "expected": "noop",
+  "baseline_ok": true,
+  "error": null,
+  "columns_differ": null,
+  "failed_checks": [],
+  "signals": {
+   "added": [],
+   "went_null": []
+  },
+  "class": "harmless"
+ },
+ {
+  "id": "c10",
+  "split": "test",
+  "group": "control",
+  "drift": [
+   "case_amount_placed"
+  ],
+  "expected": "noop",
+  "baseline_ok": true,
+  "error": null,
+  "columns_differ": null,
+  "failed_checks": [],
+  "signals": {
+   "added": [],
+   "went_null": []
+  },
+  "class": "harmless"
+ },
+ {
+  "id": "c11",
+  "split": "dev",
+  "group": "control",
+  "drift": [
+   "ts_epoch_s"
+  ],
+  "expected": "noop",
+  "baseline_ok": true,
+  "error": null,
+  "columns_differ": null,
+  "failed_checks": [],
+  "signals": {
+   "added": [],
+   "went_null": []
+  },
+  "class": "harmless"
+ },
+ {
+  "id": "c12",
+  "split": "test",
+  "group": "control",
+  "drift": [
+   "ts_offset"
+  ],
+  "expected": "noop",
+  "baseline_ok": true,
+  "error": null,
+  "columns_differ": null,
+  "failed_checks": [],
+  "signals": {
+   "added": [],
+   "went_null": []
+  },
+  "class": "harmless"
+ },
+ {
+  "id": "c13",
+  "split": "dev",
+  "group": "control",
+  "drift": [
+   "text_amount_plain"
+  ],
+  "expected": "noop",
+  "baseline_ok": true,
+  "error": null,
+  "columns_differ": null,
+  "failed_checks": [],
+  "signals": {
+   "added": [],
+   "went_null": []
+  },
+  "class": "harmless"
+ },
+ {
+  "id": "c14",
+  "split": "test",
+  "group": "control",
+  "drift": [
+   "text_item_count"
+  ],
+  "expected": "noop",
+  "baseline_ok": true,
+  "error": null,
+  "columns_differ": null,
+  "failed_checks": [],
+  "signals": {
+   "added": [],
+   "went_null": []
+  },
+  "class": "harmless"
+ },
+ {
+  "id": "u01",
+  "split": "dev",
+  "group": "unfixable",
+  "drift": [
+   "drop_order_id"
+  ],
+  "expected": "escalate",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "order_id",
+   "customer_id",
+   "placed_at",
+   "amount",
+   "status",
+   "city",
+   "state",
+   "channel",
+   "item_count"
+  ],
+  "failed_checks": [
+   "not_null_stg_orders_order_id"
+  ],
+  "signals": {
+   "added": [],
+   "went_null": [
+    "order_id"
+   ]
+  },
+  "class": "loud"
+ },
+ {
+  "id": "u02",
+  "split": "test",
+  "group": "unfixable",
+  "drift": [
+   "drop_customer_id"
+  ],
+  "expected": "escalate",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "customer_id"
+  ],
+  "failed_checks": [
+   "not_null_stg_orders_customer_id"
+  ],
+  "signals": {
+   "added": [],
+   "went_null": [
+    "customer_id"
+   ]
+  },
+  "class": "loud"
+ },
+ {
+  "id": "u03",
+  "split": "dev",
+  "group": "unfixable",
+  "drift": [
+   "drop_placed_at"
+  ],
+  "expected": "escalate",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "placed_at"
+  ],
+  "failed_checks": [
+   "not_null_stg_orders_placed_at"
+  ],
+  "signals": {
+   "added": [],
+   "went_null": [
+    "placed_at"
+   ]
+  },
+  "class": "loud"
+ },
+ {
+  "id": "u04",
+  "split": "test",
+  "group": "unfixable",
+  "drift": [
+   "drop_amount"
+  ],
+  "expected": "escalate",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "amount"
+  ],
+  "failed_checks": [
+   "not_null_stg_orders_amount"
+  ],
+  "signals": {
+   "added": [],
+   "went_null": [
+    "amount"
+   ]
+  },
+  "class": "loud"
+ },
+ {
+  "id": "u05",
+  "split": "dev",
+  "group": "unfixable",
+  "drift": [
+   "drop_status"
+  ],
+  "expected": "escalate",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "status"
+  ],
+  "failed_checks": [
+   "not_null_stg_orders_status"
+  ],
+  "signals": {
+   "added": [],
+   "went_null": [
+    "status"
+   ]
+  },
+  "class": "loud"
+ },
+ {
+  "id": "u06",
+  "split": "test",
+  "group": "unfixable",
+  "drift": [
+   "drop_city"
+  ],
+  "expected": "escalate",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "city"
+  ],
+  "failed_checks": [],
+  "signals": {
+   "added": [],
+   "went_null": [
+    "city"
+   ]
+  },
+  "class": "schema_only"
+ },
+ {
+  "id": "u07",
+  "split": "dev",
+  "group": "unfixable",
+  "drift": [
+   "drop_state"
+  ],
+  "expected": "escalate",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "state"
+  ],
+  "failed_checks": [],
+  "signals": {
+   "added": [],
+   "went_null": [
+    "state"
+   ]
+  },
+  "class": "schema_only"
+ },
+ {
+  "id": "u08",
+  "split": "test",
+  "group": "unfixable",
+  "drift": [
+   "drop_channel"
+  ],
+  "expected": "escalate",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "channel"
+  ],
+  "failed_checks": [],
+  "signals": {
+   "added": [],
+   "went_null": [
+    "channel"
+   ]
+  },
+  "class": "schema_only"
+ },
+ {
+  "id": "u09",
+  "split": "dev",
+  "group": "unfixable",
+  "drift": [
+   "drop_item_count"
+  ],
+  "expected": "escalate",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "item_count"
+  ],
+  "failed_checks": [],
+  "signals": {
+   "added": [],
+   "went_null": [
+    "item_count"
+   ]
+  },
+  "class": "schema_only"
+ },
+ {
+  "id": "u10",
+  "split": "test",
+  "group": "unfixable",
+  "drift": [
+   "drop_city_state"
+  ],
+  "expected": "escalate",
+  "baseline_ok": false,
+  "error": null,
+  "columns_differ": [
+   "city",
+   "state"
+  ],
+  "failed_checks": [],
+  "signals": {
+   "added": [],
+   "went_null": [
+    "city",
+    "state"
+   ]
+  },
+  "class": "schema_only"
+ }
+]
