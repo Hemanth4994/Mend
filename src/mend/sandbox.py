@@ -38,10 +38,31 @@ def render(model_sql: str) -> str:
     return SOURCE_REF.sub("raw.orders", model_sql)
 
 
-def stage(db_path: str | Path, model_sql: str) -> list[tuple]:
-    """Run a staging model over a raw database and return its rows in a comparable form."""
-    body = render(model_sql).strip().rstrip(";")
+def load_ids(db_path: str | Path) -> list[str]:
+    """The dlt load ids in the raw table, oldest first. One load is one daily batch."""
     con = duckdb.connect(str(db_path), read_only=True)
+    try:
+        return [r[0] for r in con.execute("select distinct _dlt_load_id from raw.orders order by 1").fetchall()]
+    finally:
+        con.close()
+
+
+def _open(db_path: str | Path, loads: list[str] | None):
+    """A connection that sees raw.orders, or only the rows of the given loads."""
+    if loads is None:
+        return duckdb.connect(str(db_path), read_only=True)
+    con = duckdb.connect(":memory:")
+    con.execute(f"ATTACH '{db_path}' AS src (READ_ONLY)")
+    con.execute("CREATE SCHEMA raw")
+    ids = ", ".join("'" + load.replace("'", "") + "'" for load in loads)
+    con.execute(f"CREATE VIEW raw.orders AS SELECT * FROM src.raw.orders WHERE _dlt_load_id IN ({ids})")
+    return con
+
+
+def stage(db_path: str | Path, model_sql: str, loads: list[str] | None = None) -> list[tuple]:
+    """Run a staging model over a raw database and return its rows in a comparable form. With `loads`, only those loads' rows are seen."""
+    body = render(model_sql).strip().rstrip(";")
+    con = _open(db_path, loads)
     try:
         con.execute("SET TimeZone='UTC'")
         sql = (f"select order_id, customer_id, cast(epoch(placed_at) as bigint) as placed_epoch, "

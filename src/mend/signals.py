@@ -48,8 +48,11 @@ def schema_signals(db: str | Path) -> dict:
     return {"added": added, "went_null": went_null}
 
 
-def dbt_build(db: str | Path, work: str | Path) -> dict[str, str]:
-    """Run `dbt build` (models and tests) on a copy of the database. Returns {node name: status}; 'fail' and 'error' mean a test or model failed."""
+def dbt_build(db: str | Path, work: str | Path, model_sql: str | None = None) -> dict[str, str]:
+    """Run `dbt build` (models and tests) on a copy of the database. Returns {node name: status}; 'fail' and 'error' mean a test or model failed.
+
+    With model_sql, the project is copied first and stg_orders.sql is replaced, so a proposed repair is tested by exactly the same
+    dbt tests as the real pipeline, without touching the real project."""
     from dbt.cli.main import dbtRunner
 
     work = Path(work)
@@ -58,9 +61,14 @@ def dbt_build(db: str | Path, work: str | Path) -> dict[str, str]:
     work.mkdir(parents=True)
     copy = work / "mend.duckdb"
     shutil.copy(db, copy)
+    project = DBT_DIR
+    if model_sql is not None:
+        project = work / "project"
+        shutil.copytree(DBT_DIR, project, ignore=shutil.ignore_patterns("target", "logs", "dbt_packages"))
+        (project / "models" / "staging" / "stg_orders.sql").write_text(model_sql, encoding="utf-8")
     os.environ["MEND_DB"] = str(copy)
     os.environ["DBT_SEND_ANONYMOUS_USAGE_STATS"] = "false"
-    res = dbtRunner().invoke(["--quiet", "build", "--project-dir", str(DBT_DIR), "--profiles-dir", str(DBT_DIR),
+    res = dbtRunner().invoke(["--quiet", "build", "--project-dir", str(project), "--profiles-dir", str(project),
                               "--target-path", str(work / "target"), "--log-path", str(work / "logs")])
     if res.exception is not None and res.result is None:
         raise RuntimeError(f"dbt could not run: {res.exception}")
@@ -69,3 +77,10 @@ def dbt_build(db: str | Path, work: str | Path) -> dict[str, str]:
 
 def failed_checks(results: dict[str, str]) -> list[str]:
     return sorted(n for n, s in results.items() if s in ("fail", "error"))
+
+
+def dbt_failures(work: str | Path) -> dict[str, int]:
+    """{check name: number of failing rows} for the checks that failed in the last dbt_build run in `work`."""
+    import json
+    data = json.loads((Path(work) / "target" / "run_results.json").read_text(encoding="utf-8"))
+    return {r["unique_id"].split(".")[2]: int(r.get("failures") or 0) for r in data["results"] if r["status"] in ("fail", "error")}
