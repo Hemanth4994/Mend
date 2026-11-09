@@ -100,7 +100,7 @@ limit (the idea from Rung); everything else waits for approval in Kestra.
 | 1 | Feed, drift catalog, 60 cases, gold repairs, sandbox, scorer | done, 143 tests |
 | 2 | dbt project and tests, baseline report over all 60 cases | done |
 | 3 | Evidence builder, repair gate, model throttle | done, 31 tests |
-| 4 | Repair agent (LangGraph: gather evidence, propose, validate in sandbox, repair once, apply or escalate), fake-model tests | next |
+| 4 | Repair agent (LangGraph: gather evidence, propose, validate in sandbox, repair once, apply or escalate), fake-model tests | done, 14 tests (188 total) |
 | 5 | Evaluation runner, dev runs of the three configurations, prompt fixed on dev only, then freeze | |
 | 6 | Test runs, failure analysis, results written up | |
 | 7 | Kestra: daily flow, repair flow, approval pause, Docker Compose | |
