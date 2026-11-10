@@ -101,7 +101,7 @@ limit (the idea from Rung); everything else waits for approval in Kestra.
 | 2 | dbt project and tests, baseline report over all 60 cases | done |
 | 3 | Evidence builder, repair gate, model throttle | done, 31 tests |
 | 4 | Repair agent (LangGraph: gather evidence, propose, validate in sandbox, repair once, apply or escalate), fake-model tests | done, 14 tests (188 total) |
-| 5 | Evaluation runner, dev runs of the three configurations, prompt fixed on dev only, then freeze | runner, scorer and dry runs done (29 tests, 217 total); real dev runs next, they need `GOOGLE_API_KEY` |
+| 5 | Evaluation runner, dev runs of the three configurations, prompt fixed on dev only, then freeze | done: three dev runs with Gemini, prompt left unchanged after seeing them, tagged `frozen-v1` (218 tests) |
 | 6 | Test runs, failure analysis, results written up | |
 | 7 | Kestra: daily flow, repair flow, approval pause, Docker Compose | |
 | 8 | CI, demo, README, LinkedIn text | |
@@ -120,6 +120,28 @@ It measures the system around the model. Dev split, `evidence` config, results i
 
 One broken case is invisible to the gate's "no change" check: `v06` (timestamps switch to IST local time with no offset; no dbt check fails and no column
 changes). It is in the test split, so dev numbers cannot show it. Only the release note reveals it, which is what the `notes` configuration tests.
+
+## Dev runs with Gemini (`gemini-3.5-flash-lite`, one run each, prompt sha `dbaec864634b`)
+
+Dev split, 30 cases. The prompt was not changed after these runs were seen, so the numbers are a first pass, not a tuned result.
+
+| Config | Correct | 95% interval | Silent corruption | What went wrong |
+|---|---|---|---|---|
+| schema | 19 of 30 | 46%-78% | 1 of 30 | value group 0 of 6; 5 needless escalations, 1 silent wrong repair (`v05`) |
+| evidence | 30 of 30 | 89%-100% | 0 of 30 | nothing |
+| notes | 29 of 30 | 83%-99% | 0 of 30 | two controls the release note pushed it to act on (`c11`, `c13`) |
+
+What the three failing kinds of case show:
+
+- `v05` (schema): dates arrive as DD/MM/YYYY text. With only column names and types the model could not see the values, assumed the US order
+  (`%m/%d/%Y`) and wrote a patch that passes every dbt test. The dates come out months wrong. This is the silent corruption: a guess, not an
+  escalation. With the evidence (sample rows) the same case is repaired on the first attempt.
+- `c11` (notes): the release note says `placed_at` is now epoch seconds, which the pipeline already absorbs. The model wrote a patch anyway, it did not
+  run (a DuckDB type error), and the gate rejected it twice, so the case was escalated. Safe, but a needless escalation; the gate did its job.
+- `c13` (notes): `amount` is now a string; the model added a redundant cast. The table is still correct (`harmless_change`), the model was changed for nothing.
+
+No group earns autonomy. Even 25 clean decisions leave a one-sided 95% upper bound of about 10% on the error rate; with zero errors it takes 52 decisions
+in one group to get under the 5% limit, and the rule asks for 30 cases per group while each group has 5-7. Every verdict is "approval needed".
 
 ## Known limits (stated up front)
 

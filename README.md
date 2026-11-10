@@ -17,6 +17,7 @@ the production gate and the repair agent are done. The evaluation runs and the K
 - `src/mend/evidence.py`, `src/mend/validate.py`: what the agent is shown, and the production gate that judges its patch (no answer key).
 - `src/mend/scoring.py`, `scripts/run_eval.py`: scores every decision against the answer key (silent corruption is the headline number) and runs a split,
   resuming where it stopped. The test split is refused unless the tag `frozen-v1` exists and the frozen folders match it.
+- `results/dev_{schema,evidence,notes}_gemini.jsonl`: one dev run per configuration with Gemini: 19, 30 and 29 of 30 correct, one silent corruption (schema only). Details in PLAN.md.
 - `scripts/standins.py`: an oracle, a lazy and an always-escalate stand-in, to measure the gate without an API key (`results/dev_evidence_*.jsonl`).
 - `src/mend/agent.py`: the LangGraph repair agent (gather, propose, gate, one repair, then patch, no_change or escalate). The model is an injected
   function, so the graph is tested with a scripted stand-in and no API key (`tests/test_agent.py`).
@@ -27,7 +28,7 @@ the production gate and the repair agent are done. The evaluation runs and the K
 
 ```bash
 pip install -c constraints.txt -e ".[dev]"
-python -m pytest                       # 217 tests, about two minutes
+python -m pytest                       # 218 tests, about two minutes
 python scripts/baseline_report.py      # all 60 cases through dlt and dbt, about two minutes
 ```
 
