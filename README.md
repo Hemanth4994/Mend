@@ -15,6 +15,9 @@ the production gate and the repair agent are done. The evaluation runs and the K
 - `src/mend/sandbox.py`: builds a case with real dlt, runs a staging model, compares with the answer key.
 - `dbt/mend_dbt/`: staging and mart models with data tests.
 - `src/mend/evidence.py`, `src/mend/validate.py`: what the agent is shown, and the production gate that judges its patch (no answer key).
+- `src/mend/scoring.py`, `scripts/run_eval.py`: scores every decision against the answer key (silent corruption is the headline number) and runs a split,
+  resuming where it stopped. The test split is refused unless the tag `frozen-v1` exists and the frozen folders match it.
+- `scripts/standins.py`: an oracle, a lazy and an always-escalate stand-in, to measure the gate without an API key (`results/dev_evidence_*.jsonl`).
 - `src/mend/agent.py`: the LangGraph repair agent (gather, propose, gate, one repair, then patch, no_change or escalate). The model is an injected
   function, so the graph is tested with a scripted stand-in and no API key (`tests/test_agent.py`).
 - `scripts/baseline_report.py`: runs every case through the unrepaired pipeline. Result: 34 break loudly, 11 pass every test with wrong
@@ -24,7 +27,7 @@ the production gate and the repair agent are done. The evaluation runs and the K
 
 ```bash
 pip install -c constraints.txt -e ".[dev]"
-python -m pytest                       # 188 tests, about a minute and a half
+python -m pytest                       # 217 tests, about two minutes
 python scripts/baseline_report.py      # all 60 cases through dlt and dbt, about two minutes
 ```
 

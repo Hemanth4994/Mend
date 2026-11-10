@@ -101,11 +101,25 @@ limit (the idea from Rung); everything else waits for approval in Kestra.
 | 2 | dbt project and tests, baseline report over all 60 cases | done |
 | 3 | Evidence builder, repair gate, model throttle | done, 31 tests |
 | 4 | Repair agent (LangGraph: gather evidence, propose, validate in sandbox, repair once, apply or escalate), fake-model tests | done, 14 tests (188 total) |
-| 5 | Evaluation runner, dev runs of the three configurations, prompt fixed on dev only, then freeze | |
+| 5 | Evaluation runner, dev runs of the three configurations, prompt fixed on dev only, then freeze | runner, scorer and dry runs done (29 tests, 217 total); real dev runs next, they need `GOOGLE_API_KEY` |
 | 6 | Test runs, failure analysis, results written up | |
 | 7 | Kestra: daily flow, repair flow, approval pause, Docker Compose | |
 | 8 | CI, demo, README, LinkedIn text | |
 | 9 | Optional: AWS (S3 + Terraform), a run on real NYC taxi schema changes | |
+
+## Dry runs with stand-in models (no API key)
+
+`scripts/run_eval.py --model oracle|lazy|escalator` runs the real graph, the real gate and the real scorer with a stand-in instead of Gemini.
+It measures the system around the model. Dev split, `evidence` config, results in `results/dev_evidence_<model>.jsonl`:
+
+| Stand-in | Correct | Silent corruption | What it shows |
+|---|---|---|---|
+| oracle (the hand-written repairs) | 30 of 30 | 0 of 30 | the gate lets every correct repair and every harmless change through |
+| lazy (always "no change") | 12 of 30 | 0 of 30 | on dev the gate rejects "no change" on all 18 repair cases; it accepts the 7 harmless ones and the 5 unfixable ones are escalated |
+| escalator (always "ask a person") | 5 of 30 | 0 of 30 | the safe, useless floor: nothing wrong, 25 needless escalations |
+
+One broken case is invisible to the gate's "no change" check: `v06` (timestamps switch to IST local time with no offset; no dbt check fails and no column
+changes). It is in the test split, so dev numbers cannot show it. Only the release note reveals it, which is what the `notes` configuration tests.
 
 ## Known limits (stated up front)
 
