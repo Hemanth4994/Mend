@@ -122,3 +122,19 @@ def test_the_report_flag_prints_a_summary_of_a_finished_run(cache, tmp_path, mon
     assert run_eval.main() == 0
     text = capsys.readouterr().out
     assert "silent corruption" in text and "structural" in text and "0 of 3" in text
+
+
+# ---- Windows: dbt keeps its log file open, and Windows refuses to delete an open file --------------------------------------------
+
+def test_the_work_folder_cleanup_tolerates_a_file_that_is_still_open(cache, tmp_path, monkeypatch):
+    import tempfile
+
+    class WindowsLike(tempfile.TemporaryDirectory):
+        def cleanup(self):
+            if not self._ignore_cleanup_errors:              # what Windows does when dbt.log is still held open by the process
+                raise PermissionError("[WinError 32] The process cannot access the file because it is being used by another process")
+            super().cleanup()
+
+    monkeypatch.setattr(tempfile, "TemporaryDirectory", WindowsLike)
+    _, rows = go(cache, tmp_path, ids=["s01"])
+    assert [r["label"] for r in rows] == ["repaired"]

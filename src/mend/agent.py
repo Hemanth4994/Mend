@@ -262,7 +262,8 @@ def main() -> None:
     cache.mkdir(parents=True, exist_ok=True)
     db = sandbox.build_case(case, cache)
     proposer = gemini_proposer(throttle=Throttle())
-    with tempfile.TemporaryDirectory() as work:
+    # dbt keeps dbt.log open until the process ends, and Windows will not delete an open file: tolerate that when cleaning up
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as work:
         final = run_case(build_agent(proposer), db, work, args.config, case.notes, case.id, case.split, proposer.model)
     print(f"{case.id} ({case.group}): outcome={final['outcome']}\nreason: {final['reason']}")
     if final["sql"]:

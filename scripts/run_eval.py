@@ -94,7 +94,8 @@ def run_split(split: str, config: str, model: str, cache: Path, out: Path, limit
         for case in todo:
             db = sandbox.build_case(case, cache)
             prop = shared or standins.make(model, case)
-            with tempfile.TemporaryDirectory() as work:
+            # dbt keeps dbt.log open until the process ends, and Windows will not delete an open file: tolerate that when cleaning up
+            with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as work:
                 try:
                     final = agent_mod.run_case(agent_mod.build_agent(prop), db, work, config, case.notes, case.id, case.split, model_id)
                 except DailyQuotaExceeded:
