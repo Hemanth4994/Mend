@@ -143,6 +143,27 @@ What the three failing kinds of case show:
 No group earns autonomy. Even 25 clean decisions leave a one-sided 95% upper bound of about 10% on the error rate; with zero errors it takes 52 decisions
 in one group to get under the 5% limit, and the rule asks for 30 cases per group while each group has 5-7. Every verdict is "approval needed".
 
+## What went wrong in the first test runs (infrastructure, not the model)
+
+The first test runs were done on Windows. Two faults in the harness, both found from the output of those runs, not from any model result:
+
+1. dlt crashes on `v04` (epoch milliseconds) on Windows: `OSError: [Errno 22]` instead of the `ValueError` dlt expects (details in `seed/README.md`).
+2. `sandbox.build_case` is not atomic. It copies the history database first and loads the drifted days afterwards, so the crash left a database with
+   no drifted days in the case cache, and `if db.exists(): return db` trusted it from then on.
+
+Effect: the `schema` run stopped at `v04` (8 of 30 cases done). The `evidence` run then saw a database with no change in it and answered "no change"
+(`missed_repair`), and the `notes` run crashed on that same database (`_dlt_load_id IN ()`). Those two `v04` rows are not model results.
+
+What was done, under one rule: **a case is re-run only when its database was not built by the code (an infrastructure fault), never because the model
+got it wrong.** The frozen folders were not touched.
+
+- `v04`'s database was built correctly on Linux from the frozen code and checked (the oracle repairs it, evidence shows the failing check and the new
+  `placed_at__v_bigint` column): `seed/v04/mend.duckdb`.
+- The two invalid rows were moved to `results/infra/` (kept, not deleted); the runner's own resume then runs `v04` and the unfinished `schema` cases.
+- No other row has an error or zero model calls, so no other case was re-run.
+
+Both faults are fixed after the test split is complete (an atomic case build, a Windows guard for dlt), in a commit that says so.
+
 ## Known limits (stated up front)
 
 - The data is synthetic and the same author wrote the drifts, the answer key and the dbt tests. The results show the agent can use
