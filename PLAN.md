@@ -102,7 +102,7 @@ limit (the idea from Rung); everything else waits for approval in Kestra.
 | 3 | Evidence builder, repair gate, model throttle | done, 31 tests |
 | 4 | Repair agent (LangGraph: gather evidence, propose, validate in sandbox, repair once, apply or escalate), fake-model tests | done, 14 tests (188 total) |
 | 5 | Evaluation runner, dev runs of the three configurations, prompt fixed on dev only, then freeze | done: three dev runs with Gemini, prompt left unchanged after seeing them, tagged `frozen-v1` (218 tests) |
-| 6 | Test runs, failure analysis, results written up | |
+| 6 | Test runs, failure analysis, results written up | done: one run per configuration on the frozen code (see "Test results"); `v04` re-run for an infrastructure fault, declared above |
 | 7 | Kestra: daily flow, repair flow, approval pause, Docker Compose | |
 | 8 | CI, demo, README, LinkedIn text | |
 | 9 | Optional: AWS (S3 + Terraform), a run on real NYC taxi schema changes | |
@@ -163,6 +163,44 @@ got it wrong.** The frozen folders were not touched.
 - No other row has an error or zero model calls, so no other case was re-run.
 
 Both faults are fixed after the test split is complete (an atomic case build, a Windows guard for dlt), in a commit that says so.
+
+## Test results (frozen code, `gemini-3.5-flash-lite`, one run per configuration, prompt sha `dbaec864634b` in every run)
+
+Test split, 30 cases. Each number is a single run; intervals are Wilson 95%.
+
+| Config | Correct | 95% interval | Silent corruption | Needless escalations |
+|---|---|---|---|---|
+| schema | 20 of 30 | 49%-81% | 1 of 30 (`v06`) | 9 |
+| evidence | 26 of 30 | 70%-95% | 2 of 30 (`v06`, `m04`) | 2 |
+| notes | 27 of 30 | 74%-97% | 1 of 30 (`v06`) | 2 |
+
+Dev and test together (the prompt was identical, nothing was tuned between them): schema 39 of 60 (52%-76%), evidence 56 of 60 (84%-97%),
+notes 56 of 60 (84%-97%). Evidence went from 30 of 30 on dev to 26 of 30 on test with the same prompt; the intervals overlap, and the test number is the one to quote.
+
+What the results say:
+
+1. **Evidence is what makes repair possible.** Schema only is 65% over 60 cases, evidence 93%; the intervals do not overlap. Without the sample rows and
+   the failing checks the model cannot see the new value format, so it escalates (19 needless escalations in 60 cases) or guesses.
+2. **The release note did not add a measurable gain over evidence** (26 against 27 on test, 56 against 56 together). It changed which cases fail:
+   on `m04` (a renamed column whose timestamps are also IST) evidence alone silently shifted every new timestamp by 5.5 hours, and notes repaired it.
+3. **Every silent corruption on test is a timezone case, and no data check can see it.** `v06` (timestamps become IST local time with no offset): schema and
+   evidence answered "no change" because every test passes and no column changes. With the note the model found the change but converted the wrong way:
+   `at time zone 'Asia/Kolkata'` added 5:30 instead of taking it off, so the table is 11 hours wrong. `m04` under evidence is the 5.5 hour error above.
+   On dev the single silent corruption was also a time guess (`v05`, day-first dates read as month-first). That is five silent decisions across the six
+   runs (180 case runs), all about how time is written.
+4. **The gate caught every other bad patch.** `v08` (status codes) was escalated in all three configurations after two rejected patches; `c10` under notes
+   was a patch that did not run. None of the silent corruptions came from a patch the gate had evidence against.
+5. **A habit of the model, seen in `v06` and `v08`:** to protect old rows it scopes a repair with a hand-picked cutoff on `placed_at` instead of by load. In `v08` under
+   notes the mapping was right (0 placed, 1 shipped, 2 delivered, 3 cancelled) but the cutoff `2026-03-08` missed the first two drifted days, so the gate
+   rejected both attempts. Under evidence it also rotated the mapping. A prompt that scopes by load is a hypothesis for a new held-out set; the test
+   split is frozen and was not used to change anything.
+6. **No group earns autonomy.** The best case is 7 clean decisions in a group, the one-sided 95% upper bound is then 28%, and with zero errors 52 decisions
+   in a group are needed to get under the 5% limit. Every verdict is "approval needed".
+
+What it means for the design: a patch that touches a timestamp column should always wait for a person, whatever the statistics say, because the
+checks that run in production cannot see a shift in time. Three of the five silent decisions were such patches (`v05`, `v06` under notes, `m04`
+under evidence). The other two were "no change" answers on `v06` that the gate had no way to doubt; only the source's release note reveals that case,
+so a source change notice has to count as a trigger in its own right.
 
 ## Known limits (stated up front)
 
