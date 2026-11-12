@@ -1,0 +1,135 @@
+id: repair
+namespace: mend
+
+description: |
+  The repair flow: ask the agent what to do about the drift, show the proposal, and wait for a person.
+
+  1. `propose` runs the agent. It reads the evidence, proposes one of three things (patch the staging model, no change needed,
+     ask a person) and only a proposal that passes the production gate gets this far. Its log has the diff and the gate result.
+     Nothing in the pipeline is changed by this step.
+  2. For a patch or a "no change", the execution pauses. Open the `propose` log, read it, then resume this execution:
+     tick `approve` to apply it, or leave it unticked to reject it. Every proposal waits for a person: in the evaluation no
+     kind of change earned automatic approval.
+  3. `apply` checks the proposal again on today's data, changes the live model, rebuilds the marts, and puts the old model
+     back if the rebuild is not healthy.
+  4. If the agent asks for a person, this execution fails on purpose, so the escalation is red in the UI, not a quiet log line.
+
+labels:
+  project: mend
+
+inputs:
+  - id: config
+    type: SELECT
+    defaults: evidence
+    values:
+      - evidence
+      - notes
+      - schema
+    description: What the agent is shown. evidence = the data and the check results (default). notes = evidence plus the source team's release note. schema = column names only.
+  - id: notes
+    type: STRING
+    required: false
+    description: Release note for config=notes. Empty uses the note that came with the simulated source change.
+  - id: force
+    type: BOOL
+    defaults: false
+    description: Ask for a new proposal even though one is waiting, rejected or escalated.
+
+tasks:
+  - id: propose
+    type: io.kestra.plugin.scripts.shell.Commands
+    containerImage: mend-ops:local
+    taskRunner:
+      type: io.kestra.plugin.scripts.runner.docker.Docker
+      pullPolicy: NEVER
+      volumes:
+        - mend_home:/mend_home
+    warningOnStdErr: false
+    env:
+      GOOGLE_API_KEY: "{{ secret('GOOGLE_API_KEY') }}"
+      MEND_RELEASE_NOTE: "{{ inputs.notes ?? '' }}"
+    commands:
+      - "mend-ops --kestra repair --config {{ inputs.config }} {{ inputs.force ? '--force' : '' }}"
+
+  - id: route
+    type: io.kestra.plugin.core.flow.If
+    condition: "{{ outputs.propose.vars.needs_approval == 'true' }}"
+    then:
+      - id: ask
+        type: io.kestra.plugin.core.log.Log
+        message: "Proposal {{ outputs.propose.vars.repair_id }} ({{ outputs.propose.vars.outcome }}): {{ outputs.propose.vars.reason }} Waiting for a decision; nothing has been changed."
+
+      - id: approval
+        type: io.kestra.plugin.core.flow.Pause
+        timeout: PT72H
+        description: |
+          Read the log of the `propose` task: the diff and the gate result. Then resume.
+          Tick `approve` to apply the proposal. Leave it unticked to reject it.
+        onResume:
+          - id: approve
+            type: BOOL
+            defaults: false
+            description: Apply this proposal to the live pipeline.
+          - id: comment
+            type: STRING
+            required: false
+            description: Why (kept in the repair folder and the event log).
+
+      - id: decision
+        type: io.kestra.plugin.core.flow.If
+        condition: "{{ outputs.approval.onResume.approve }}"
+        then:
+          - id: apply
+            type: io.kestra.plugin.scripts.shell.Commands
+            containerImage: mend-ops:local
+            taskRunner:
+              type: io.kestra.plugin.scripts.runner.docker.Docker
+              pullPolicy: NEVER
+              volumes:
+                - mend_home:/mend_home
+            warningOnStdErr: false
+            env:
+              MEND_COMMENT: "{{ outputs.approval.onResume.comment ?? '' }}"
+            commands:
+              - mend-ops --kestra apply {{ outputs.propose.vars.repair_id }} --by kestra-ui
+
+          - id: applied
+            type: io.kestra.plugin.core.log.Log
+            message: "Applied. The pipeline is {{ outputs.apply.vars.status }}; the marts have {{ outputs.apply.vars.mart_days }} days, latest {{ outputs.apply.vars.mart_latest_day }}."
+        else:
+          - id: reject
+            type: io.kestra.plugin.scripts.shell.Commands
+            containerImage: mend-ops:local
+            taskRunner:
+              type: io.kestra.plugin.scripts.runner.docker.Docker
+              pullPolicy: NEVER
+              volumes:
+                - mend_home:/mend_home
+            warningOnStdErr: false
+            env:
+              MEND_COMMENT: "{{ outputs.approval.onResume.comment ?? '' }}"
+            commands:
+              - mend-ops --kestra reject {{ outputs.propose.vars.repair_id }} --by kestra-ui
+
+          - id: rejected
+            type: io.kestra.plugin.core.log.Log
+            level: WARN
+            message: "Rejected. The pipeline is unchanged and still in drift; the marts keep their last good numbers."
+    else:
+      - id: escalation
+        type: io.kestra.plugin.core.flow.If
+        condition: "{{ outputs.propose.vars.outcome == 'escalate' }}"
+        then:
+          - id: escalate
+            type: io.kestra.plugin.core.execution.Fail
+            errorMessage: "Mend asks for a person ({{ outputs.propose.vars.repair_id }}): {{ outputs.propose.vars.reason }}"
+        else:
+          - id: nothing_to_do
+            type: io.kestra.plugin.core.log.Log
+            message: "{{ outputs.propose.vars.reason }}"
+
+errors:
+  - id: failed
+    type: io.kestra.plugin.core.log.Log
+    level: ERROR
+    message: "The repair flow stopped here. If it is an escalation, the reason is in the failed task. The pipeline was not changed by this flow."

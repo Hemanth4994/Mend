@@ -1,0 +1,84 @@
+id: daily
+namespace: mend
+
+description: |
+  The daily run: load the next batch of the feed, build the marts with dbt, and decide.
+
+  - Healthy: done.
+  - Something changed (a dbt check fails, or the source added a column or emptied one): the marts keep yesterday's numbers,
+    and the `repair` flow is started once. It waits for a person; nothing in the pipeline changes by itself.
+  - Already being handled: it says so and does not ask the model again.
+
+  The schedule is defined but switched off, so a demo laptop does not change state overnight. Set `disabled: false` to run it for real.
+
+labels:
+  project: mend
+
+concurrency:
+  limit: 1
+  behavior: QUEUE
+
+tasks:
+  - id: ingest
+    type: io.kestra.plugin.scripts.shell.Commands
+    containerImage: mend-ops:local
+    taskRunner:
+      type: io.kestra.plugin.scripts.runner.docker.Docker
+      pullPolicy: NEVER
+      volumes:
+        - mend_home:/mend_home
+    warningOnStdErr: false
+    commands:
+      - mend-ops --kestra ingest
+
+  - id: build
+    type: io.kestra.plugin.scripts.shell.Commands
+    containerImage: mend-ops:local
+    taskRunner:
+      type: io.kestra.plugin.scripts.runner.docker.Docker
+      pullPolicy: NEVER
+      volumes:
+        - mend_home:/mend_home
+    warningOnStdErr: false
+    commands:
+      - mend-ops --kestra build
+
+  - id: route
+    type: io.kestra.plugin.core.flow.If
+    condition: "{{ outputs.build.vars.status == 'drift' }}"
+    then:
+      - id: is_it_new
+        type: io.kestra.plugin.core.flow.If
+        condition: "{{ outputs.build.vars.drift_handled == 'false' }}"
+        then:
+          - id: start_repair
+            type: io.kestra.plugin.core.flow.Subflow
+            namespace: mend
+            flowId: repair
+            wait: false
+          - id: told
+            type: io.kestra.plugin.core.log.Log
+            level: WARN
+            message: "Drift: {{ outputs.build.vars.reasons }}. The marts still show {{ outputs.build.vars.mart_latest_day }}. The repair flow was started and is waiting for you."
+        else:
+          - id: already
+            type: io.kestra.plugin.core.log.Log
+            level: WARN
+            message: "Drift: {{ outputs.build.vars.reasons }}. Repair {{ outputs.build.vars.open_repair }} is {{ outputs.build.vars.open_repair_status }}; not asking again. Run the `repair` flow with force to get a new proposal."
+    else:
+      - id: healthy
+        type: io.kestra.plugin.core.log.Log
+        message: "Healthy. The marts have {{ outputs.build.vars.mart_days }} days, latest {{ outputs.build.vars.mart_latest_day }}."
+
+triggers:
+  - id: every_morning
+    type: io.kestra.plugin.core.trigger.Schedule
+    cron: "30 6 * * *"
+    timezone: Asia/Kolkata
+    disabled: true
+
+errors:
+  - id: failed
+    type: io.kestra.plugin.core.log.Log
+    level: ERROR
+    message: "The daily run failed. Open the failed task in this execution and read its log."

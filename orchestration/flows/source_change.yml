@@ -1,0 +1,54 @@
+id: source_change
+namespace: mend
+
+description: |
+  Demo only. Plays the part of the team that owns the source: from the next daily run on, the feed arrives changed.
+  Pick a change, run this, then run the `daily` flow and watch what Mend does.
+
+  What each change does to the build (checked on the pipeline, not guessed):
+
+  - add_coupon: a new optional column. dbt passes, only the schema check notices. The right answer is "no change needed".
+  - rename_amount, text_amount_rupee, ts_epoch_ms: a dbt check fails and the marts stop at the last good day. The right answer is a patch to the staging model.
+  - status_letters: a dbt check fails, but no column was added or emptied. The right answer is a patch.
+  - nest_shipping: city and state move into an object. dbt still passes and the marts still build, with city and state silently empty. Only the schema check notices. The right answer is a patch.
+  - drop_city: a field disappears. dbt still passes; only the schema check notices. No patch can bring the data back, so the right answer is to ask a person.
+  - ts_ist_naive: timestamps switch to local time with no offset. Nothing fails and nothing looks new: Mend reports healthy while the marts quietly shift revenue between days. This is the kind of change the evaluation found it cannot see.
+
+labels:
+  project: mend
+
+inputs:
+  - id: drift
+    type: SELECT
+    required: true
+    defaults: add_coupon
+    values:
+      - add_coupon
+      - rename_amount
+      - nest_shipping
+      - text_amount_rupee
+      - status_letters
+      - ts_epoch_ms
+      - drop_city
+      - ts_ist_naive
+  - id: clear
+    type: BOOL
+    defaults: false
+    description: Tick to make the source send the original feed again (the chosen change is ignored).
+
+tasks:
+  - id: change
+    type: io.kestra.plugin.scripts.shell.Commands
+    containerImage: mend-ops:local
+    taskRunner:
+      type: io.kestra.plugin.scripts.runner.docker.Docker
+      pullPolicy: NEVER
+      volumes:
+        - mend_home:/mend_home
+    warningOnStdErr: false
+    commands:
+      - "mend-ops --kestra source-change {{ inputs.clear ? '--clear' : inputs.drift }}"
+
+  - id: said
+    type: io.kestra.plugin.core.log.Log
+    message: "The source now sends: {{ outputs.change.vars.source_drift }}. It applies from the next `daily` run."

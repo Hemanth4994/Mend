@@ -23,5 +23,5 @@ dev = ["pytest>=8"]
 where = ["src"]
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
-testpaths = ["tests"]
+pythonpath = ["src", "orchestration", "orchestration/tests"]
+testpaths = ["tests", "orchestration/tests"]

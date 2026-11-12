@@ -14,3 +14,4 @@ dbt/mend_dbt/logs/
 dbt/mend_dbt/dbt_packages/
 .dlt/secrets.toml
 .mend_cache/
+.mend_home/

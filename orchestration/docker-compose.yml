@@ -1,0 +1,98 @@
+# Mend with Kestra, for one laptop.
+#   python orchestration/make_env.py              (once: writes orchestration/.env, which is never committed)
+#   docker compose -f orchestration/docker-compose.yml up -d --build
+#   open http://localhost:8080
+#
+# Layout: postgres holds Kestra's own state. kestra runs the flows in ./flows and starts a short-lived container from the
+# mend-ops image for every step. The pipeline itself (warehouse, dlt state, the live dbt project, repair proposals) lives in
+# the named volume mend_home, which those step containers mount.
+name: mend
+
+volumes:
+  postgres-data:
+  kestra-data:
+  mend_home:
+    name: mend_home          # the flows mount the volume by this exact name
+
+services:
+  # Builds the image the flows run (mend-ops:local) and exits. Kestra waits for it, so a fresh `up` never starts a flow
+  # before the image exists. The flows use pullPolicy NEVER: they run this local image and never look for it on Docker Hub.
+  mend-image:
+    image: mend-ops:local
+    build:
+      context: ..
+      dockerfile: orchestration/Dockerfile
+    command: ["python", "-c", "import mend; print('mend-ops image is ready')"]
+    volumes:
+      - mend_home:/mend_home
+    restart: "no"
+
+  postgres:
+    image: postgres:18
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    environment:
+      POSTGRES_DB: kestra
+      POSTGRES_USER: kestra
+      POSTGRES_PASSWORD: k3str4          # Kestra's own database; the port is not published, only this compose network can reach it
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  kestra:
+    image: kestra/kestra:v2.0.10         # pinned: flows are written against this version (see orchestration/README.md)
+    # Kestra waits for running tasks on shutdown; leave it time to.
+    stop_grace_period: 6m
+    # Kestra starts the step containers through the Docker socket, which needs root inside this container. Fine on a laptop;
+    # it is why the UI is bound to localhost and protected by the login below.
+    user: "root"
+    command: server standalone --flow-path /mend_flows
+    volumes:
+      - kestra-data:/app/storage
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp/kestra-wd:/tmp/kestra-wd
+      - ./flows:/mend_flows:ro
+    environment:
+      # A Kestra secret is an environment variable SECRET_<NAME> holding the base64 of the value; flows read it as secret('<NAME>').
+      # make_env.py writes it. Empty is allowed: everything but the model call still works.
+      SECRET_GOOGLE_API_KEY: ${SECRET_GOOGLE_API_KEY:-}
+      KESTRA_CONFIGURATION: |
+        datasources:
+          postgres:
+            url: jdbc:postgresql://postgres:5432/kestra
+            driverClassName: org.postgresql.Driver
+            username: kestra
+            password: k3str4
+        kestra:
+          server:
+            basic-auth:
+              username: "${MEND_KESTRA_USER:?run python orchestration/make_env.py first}"
+              password: "${MEND_KESTRA_PASSWORD:?run python orchestration/make_env.py first}"
+          repository:
+            type: postgres
+          storage:
+            type: local
+            local:
+              base-path: "/app/storage"
+          queue:
+            type: postgres
+          tasks:
+            tmp-dir:
+              path: /tmp/kestra-wd/tmp
+          plugins:
+            configurations:
+              # lets a flow mount a named volume into a step container (the mend_home volume)
+              - type: io.kestra.plugin.scripts.runner.docker.Docker
+                values:
+                  volume-enabled: true
+          url: http://localhost:8080/
+    ports:
+      # localhost only. The management port 8081 is not published: it is unauthenticated.
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mend-image:
+        condition: service_completed_successfully

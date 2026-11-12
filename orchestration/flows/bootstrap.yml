@@ -1,0 +1,32 @@
+id: bootstrap
+namespace: mend
+
+description: |
+  One-off set-up, and the reset button for a demo: wipes the pipeline, loads a few healthy days from the original feed
+  and builds the marts. Run it first. Run it again to start over.
+
+labels:
+  project: mend
+
+inputs:
+  - id: days
+    type: INT
+    defaults: 5
+    description: Healthy daily loads to start with. The evaluation used 5.
+
+tasks:
+  - id: bootstrap
+    type: io.kestra.plugin.scripts.shell.Commands
+    containerImage: mend-ops:local
+    taskRunner:
+      type: io.kestra.plugin.scripts.runner.docker.Docker
+      pullPolicy: NEVER
+      volumes:
+        - mend_home:/mend_home
+    warningOnStdErr: false
+    commands:
+      - mend-ops --kestra bootstrap --days {{ inputs.days }}
+
+  - id: done
+    type: io.kestra.plugin.core.log.Log
+    message: "Pipeline ready: {{ outputs.bootstrap.vars.days_loaded }} healthy days, mart has {{ outputs.bootstrap.vars.mart_days }} days (latest {{ outputs.bootstrap.vars.mart_latest_day }})."

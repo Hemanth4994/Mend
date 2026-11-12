@@ -103,7 +103,7 @@ limit (the idea from Rung); everything else waits for approval in Kestra.
 | 4 | Repair agent (LangGraph: gather evidence, propose, validate in sandbox, repair once, apply or escalate), fake-model tests | done, 14 tests (188 total) |
 | 5 | Evaluation runner, dev runs of the three configurations, prompt fixed on dev only, then freeze | done: three dev runs with Gemini, prompt left unchanged after seeing them, tagged `frozen-v1` (218 tests) |
 | 6 | Test runs, failure analysis, results written up | done: one run per configuration on the frozen code (see "Test results"); `v04` re-run for an infrastructure fault, declared above |
-| 7 | Kestra: daily flow, repair flow, approval pause, Docker Compose | |
+| 7 | Kestra: daily flow, repair flow, approval pause, Docker Compose | built, tested without Docker: `orchestration/` (ops commands + 43 tests, 261 in all, 4 flows, image, compose). Flows checked against Kestra v2.0.10's source, **never run**: the first `docker compose up` is the real test |
 | 8 | CI, demo, README, LinkedIn text | |
 | 9 | Optional: AWS (S3 + Terraform), a run on real NYC taxi schema changes | |
 
@@ -208,5 +208,9 @@ so a source change notice has to count as a trigger in its own right.
   supplied evidence, not that it would find every real-world change.
 - 30 test cases per configuration is a small sample; intervals are wide.
 - dlt's schema handling differs between versions; results are only claimed for the pinned versions.
-- Kestra could not be run where this was built (no Docker daemon). The flows are thin wrappers around commands that are tested, and
-  the first `docker compose up` on a real machine is the real test of them.
+- Kestra could not be run where this was built (Docker Hub is blocked, so no image could be pulled or built). The flows are thin wrappers around
+  commands that are tested, every task type and property in them was checked against Kestra v2.0.10's source, and a test keeps every output they read
+  in step with what the commands print. The first `docker compose up` on a real machine is the real test of them.
+- The agent was evaluated on one source change per fresh history. In the live pipeline several changes can follow one another; `orchestration/mend_ops.py`
+  hides changes a person already approved from the evidence (otherwise a retired column keeps looking "empty" and the agent escalates for the wrong
+  reason), but that combination was only tested with a scripted model, not measured.

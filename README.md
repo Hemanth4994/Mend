@@ -3,7 +3,7 @@
 Self-healing data pipelines. A daily dlt + dbt pipeline loads an orders feed into DuckDB. When the source changes shape without
 warning, an agent proposes a fix to the dbt staging model, tests it in a sandbox, and applies it or escalates to a human.
 
-Status: **the evaluation is finished; the Kestra flows, Docker Compose and CI are not built yet.** See [PLAN.md](PLAN.md) for the design and what is done.
+Status: **the evaluation is finished and the orchestration is built (Kestra flows, Docker Compose); CI is not built yet.** The flows have been checked against Kestra's source but not run, because the build environment could not pull Docker images: see [orchestration/README.md](orchestration/README.md). See [PLAN.md](PLAN.md) for the design and what is done.
 
 ## Result
 
@@ -38,6 +38,7 @@ test split was touched (tag `frozen-v1`). Gemini 3.5 Flash-Lite, 2 attempts per 
 - `scripts/standins.py`: an oracle, a lazy and an always-escalate stand-in, to measure the gate without an API key (`results/dev_evidence_*.jsonl`).
 - `src/mend/agent.py`: the LangGraph repair agent (gather, propose, gate, one repair, then patch, no_change or escalate). The model is an injected
   function, so the graph is tested with a scripted stand-in and no API key (`tests/test_agent.py`).
+- `orchestration/`: the live pipeline. `mend_ops.py` (ingest, build, repair, apply, reject, with a lock and an undo), four Kestra flows (daily run, repair with an approval pause, a bootstrap, a demo source change), a Dockerfile and a Compose file. Every proposal waits for a person.
 - `scripts/baseline_report.py`: runs every case through the unrepaired pipeline. Result: 34 break loudly, 11 pass every test with wrong
   numbers but show a schema change, 1 is invisible to every check, and the 14 harmless ones are all absorbed by dlt.
 
@@ -45,7 +46,7 @@ test split was touched (tag `frozen-v1`). Gemini 3.5 Flash-Lite, 2 attempts per 
 
 ```bash
 pip install -c constraints.txt -e ".[dev]"
-python -m pytest                       # 218 tests, about two minutes
+python -m pytest                       # 261 tests, about seven minutes (43 of them are the orchestration tests)
 python scripts/baseline_report.py      # all 60 cases through dlt and dbt, about two minutes
 ```
 
