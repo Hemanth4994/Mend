@@ -132,6 +132,7 @@ PLAN.md; inside the container (Linux) it does not.
 | No flows under namespace `mend` | `docker compose ... logs kestra` and look for `Unable to create flow`: it names the file and the property Kestra rejected |
 | A step fails with "volumes are disabled" | the `plugins.configurations` block did not reach Kestra; check the `KESTRA_CONFIGURATION` indentation in `docker-compose.yml` |
 | A step fails with "image mend-ops:local not found" | the build did not finish: `docker compose ... build mend-image`, then `docker image ls mend-ops` |
+| `ports are not available ... 127.0.0.1:8080 ... Only one usage of each socket address` | another program on your machine already uses port 8080. Find it with `netstat -ano \| findstr :8080` (the last column is the process id; `tasklist /FI "PID eq <id>"` names it), or add `MEND_KESTRA_PORT=8088` to `orchestration/.env`, run the `up` command again, and open http://localhost:8088 |
 | A flow is missing, and the Kestra log says the type `io.kestra.plugin.scripts.shell.Commands` is unknown | the shell plugin is not in the image: `docker compose -f orchestration/docker-compose.yml --env-file orchestration/.env build --no-cache kestra`, then `docker run --rm --entrypoint /app/kestra mend-kestra:local plugins list --plugins /app/plugins` should list it |
 | The Kestra image build fails at `plugins install` | it downloads from Maven Central: check your internet connection or proxy, then build again |
 | `propose` fails with GOOGLE_API_KEY | run `make_env.py` again with your key, then `restart kestra` |

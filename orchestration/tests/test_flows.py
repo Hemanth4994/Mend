@@ -99,7 +99,7 @@ def test_the_compose_file_builds_a_pinned_slim_kestra_and_publishes_nothing_but_
     assert re.search(r"(?m)^FROM kestra/kestra:v\d+\.\d+\.\d+-slim$", dockerfile), "pin an exact version, not latest"
     assert "/app/kestra plugins install io.kestra.plugin:plugin-script-shell:LATEST" in dockerfile   # the one plugin the flows need
     assert (ORCH / "kestra").iterdir() and [p.name for p in (ORCH / "kestra").iterdir()] == ["Dockerfile"]   # nothing else (.env) in the build context
-    assert kestra["ports"] == ["127.0.0.1:8080:8080"]
+    assert kestra["ports"] == ["127.0.0.1:${MEND_KESTRA_PORT:-8080}:8080"]          # localhost only; the port can move if 8080 is taken
     assert "postgres" not in str(compose["services"]["postgres"].get("ports", ""))
     assert compose["volumes"]["mend_home"]["name"] == "mend_home"
 

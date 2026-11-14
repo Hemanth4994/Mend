@@ -1,7 +1,7 @@
 # Mend with Kestra, for one laptop.
 #   python orchestration/make_env.py              (once: writes orchestration/.env, which is never committed)
 #   docker compose -f orchestration/docker-compose.yml up -d --build
-#   open http://localhost:8080
+#   open http://localhost:8080   (or the port in MEND_KESTRA_PORT)
 #
 # Layout: postgres holds Kestra's own state. kestra (a slim build, see kestra/Dockerfile) runs the flows in ./flows and starts a short-lived container from the
 # mend-ops image for every step. The pipeline itself (warehouse, dlt state, the live dbt project, repair proposals) lives in
@@ -91,10 +91,11 @@ services:
               - type: io.kestra.plugin.scripts.runner.docker.Docker
                 values:
                   volume-enabled: true
-          url: http://localhost:8080/
+          url: http://localhost:${MEND_KESTRA_PORT:-8080}/
     ports:
-      # localhost only. The management port 8081 is not published: it is unauthenticated.
-      - "127.0.0.1:8080:8080"
+      # localhost only, on 8080 unless MEND_KESTRA_PORT in .env says otherwise (another program may already use 8080).
+      # The management port 8081 is not published: it is unauthenticated.
+      - "127.0.0.1:${MEND_KESTRA_PORT:-8080}:8080"
     depends_on:
       postgres:
         condition: service_healthy
