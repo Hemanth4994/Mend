@@ -33,7 +33,7 @@ The Python layer was also run from a clean install laid out like the image (pinn
 the image has not been built and no flow has been run. What stands in for that run:
 
 - Every task type, property and input type in `flows/` was checked against the source of Kestra **v2.0.10**, the version
-  pinned in `docker-compose.yml` (`core`, `plugin-scripts`, and the Docker runner). `tests/test_flows.py` keeps the flows inside
+  pinned in `kestra/Dockerfile` (`core`, `plugin-scripts`, and the Docker runner). `tests/test_flows.py` keeps the flows inside
   that list, and checks that every output a flow reads (`outputs.<task>.vars.<key>`) is a key the command really prints.
 - The compose file follows Kestra's own `docker-compose.yml` for that version, with the changes below.
 
@@ -49,7 +49,7 @@ python orchestration/make_env.py                  # asks for a Kestra login and,
 docker compose -f orchestration/docker-compose.yml --env-file orchestration/.env up -d --build
 ```
 
-The first build takes a few minutes (it installs the Python dependencies). Then open http://localhost:8080 and sign in with the
+The first build takes a few minutes: it installs the Python dependencies for the Mend image, and builds a slim Kestra image (downloading the shell plugin from Maven Central, so it needs internet). Then open http://localhost:8080 and sign in with the
 login you gave `make_env.py`. The flows are in the namespace `mend`; they are loaded from `orchestration/flows/` when Kestra starts
 (restart Kestra after editing one: `docker compose -f orchestration/docker-compose.yml --env-file orchestration/.env restart kestra`).
 
@@ -114,9 +114,15 @@ PLAN.md; inside the container (Linux) it does not.
 
 ## Where this differs from Kestra's own compose file
 
-`image: kestra/kestra:v2.0.10` (pinned, not `latest`); the UI on `127.0.0.1` only; basic auth from `.env`; `--flow-path /mend_flows`;
-`plugins.configurations` enables `volume-enabled` for the Docker runner (without it a flow cannot mount `mend_home`); the `mend-image` service
-that builds `mend-ops:local` and exits, which Kestra waits for. Kestra 2.0 removed `pluginDefaults`, so each task repeats its small Docker block.
+- **A slim Kestra image, built locally** (`kestra/Dockerfile`): `kestra/kestra:v2.0.10-slim` (pinned, not `latest`) plus the one plugin the flows need,
+  `plugin-script-shell`, installed at build time. The stock image bundles every plugin and is a ~4.7 GB download; on a slow connection that pull
+  stalled. Everything else the flows use is part of Kestra itself (checked in `tests/test_flows.py`). Open-source Kestra installs the latest plugin
+  version compatible with the image, so the plugin version is not pinned.
+  Sources: Kestra's guides [Build a Custom Kestra Image with Only the Plugins You Need](https://kestra.io/docs/how-to-guides/slim-image-plugins) and
+  [Install Only Selected Plugins](https://kestra.io/docs/how-to-guides/selected-plugin-installation).
+- The UI on `127.0.0.1` only; basic auth from `.env`; `--flow-path /mend_flows`; `plugins.configurations` enables `volume-enabled` for the Docker
+  runner (without it a flow cannot mount `mend_home`); the `mend-image` service that builds `mend-ops:local` and exits, which Kestra waits for.
+- Kestra 2.0 removed `pluginDefaults`, so each task repeats its small Docker block.
 
 ## If the first run fails
 
@@ -126,6 +132,8 @@ that builds `mend-ops:local` and exits, which Kestra waits for. Kestra 2.0 remov
 | No flows under namespace `mend` | `docker compose ... logs kestra` and look for `Unable to create flow`: it names the file and the property Kestra rejected |
 | A step fails with "volumes are disabled" | the `plugins.configurations` block did not reach Kestra; check the `KESTRA_CONFIGURATION` indentation in `docker-compose.yml` |
 | A step fails with "image mend-ops:local not found" | the build did not finish: `docker compose ... build mend-image`, then `docker image ls mend-ops` |
+| A flow is missing, and the Kestra log says the type `io.kestra.plugin.scripts.shell.Commands` is unknown | the shell plugin is not in the image: `docker compose -f orchestration/docker-compose.yml --env-file orchestration/.env build --no-cache kestra`, then `docker run --rm --entrypoint /app/kestra mend-kestra:local plugins list --plugins /app/plugins` should list it |
+| The Kestra image build fails at `plugins install` | it downloads from Maven Central: check your internet connection or proxy, then build again |
 | `propose` fails with GOOGLE_API_KEY | run `make_env.py` again with your key, then `restart kestra` |
 | A step fails with a Docker connection error | Kestra starts the step containers through `/var/run/docker.sock` (as in Kestra's own compose file); Docker Desktop must be running and be the engine `docker compose` talks to |
 | Anything in `mend_ops` | `docker run --rm -v mend_home:/mend_home mend-ops:local mend-ops status` shows the pipeline from outside Kestra |

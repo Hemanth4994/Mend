@@ -3,7 +3,7 @@
 #   docker compose -f orchestration/docker-compose.yml up -d --build
 #   open http://localhost:8080
 #
-# Layout: postgres holds Kestra's own state. kestra runs the flows in ./flows and starts a short-lived container from the
+# Layout: postgres holds Kestra's own state. kestra (a slim build, see kestra/Dockerfile) runs the flows in ./flows and starts a short-lived container from the
 # mend-ops image for every step. The pipeline itself (warehouse, dlt state, the live dbt project, repair proposals) lives in
 # the named volume mend_home, which those step containers mount.
 name: mend
@@ -42,7 +42,11 @@ services:
       retries: 10
 
   kestra:
-    image: kestra/kestra:v2.0.10         # pinned: flows are written against this version (see orchestration/README.md)
+    # Kestra v2.0.10 (pinned: the flows were checked against it) without its bundled plugins, plus the shell plugin: see kestra/Dockerfile.
+    # The stock image is a ~4.7 GB download; this one is a fraction of that.
+    image: mend-kestra:local
+    build:
+      context: ./kestra
     # Kestra waits for running tasks on shutdown; leave it time to.
     stop_grace_period: 6m
     # Kestra starts the step containers through the Docker socket, which needs root inside this container. Fine on a laptop;

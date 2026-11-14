@@ -91,13 +91,24 @@ def test_the_daily_flow_starts_the_repair_flow_without_waiting_for_it():
     assert "repair" in {p.stem for p in FLOWS}
 
 
-def test_the_compose_file_pins_kestra_and_publishes_nothing_but_the_ui_on_localhost():
+def test_the_compose_file_builds_a_pinned_slim_kestra_and_publishes_nothing_but_the_ui_on_localhost():
     compose = yaml.safe_load((ORCH / "docker-compose.yml").read_text(encoding="utf-8"))
     kestra = compose["services"]["kestra"]
-    assert re.fullmatch(r"kestra/kestra:v\d+\.\d+\.\d+", kestra["image"]), kestra["image"]
+    assert kestra["image"] == "mend-kestra:local" and kestra["build"]["context"] == "./kestra"
+    dockerfile = (ORCH / "kestra" / "Dockerfile").read_text(encoding="utf-8")
+    assert re.search(r"(?m)^FROM kestra/kestra:v\d+\.\d+\.\d+-slim$", dockerfile), "pin an exact version, not latest"
+    assert "/app/kestra plugins install io.kestra.plugin:plugin-script-shell:LATEST" in dockerfile   # the one plugin the flows need
+    assert (ORCH / "kestra").iterdir() and [p.name for p in (ORCH / "kestra").iterdir()] == ["Dockerfile"]   # nothing else (.env) in the build context
     assert kestra["ports"] == ["127.0.0.1:8080:8080"]
     assert "postgres" not in str(compose["services"]["postgres"].get("ports", ""))
     assert compose["volumes"]["mend_home"]["name"] == "mend_home"
+
+
+def test_every_task_type_the_flows_use_comes_from_kestra_itself_or_the_shell_plugin():
+    """The slim image has no plugins except the one installed in kestra/Dockerfile."""
+    used = {t["type"] for path in FLOWS for t in all_tasks(load(path))}
+    triggers = {t["type"] for path in FLOWS for t in load(path).get("triggers", [])}
+    assert {u for u in used | triggers if not u.startswith("io.kestra.plugin.core.")} == {"io.kestra.plugin.scripts.shell.Commands"}
 
 
 def test_no_secret_is_committed_in_orchestration():
