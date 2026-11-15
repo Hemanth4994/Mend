@@ -34,7 +34,7 @@ on a Windows laptop with Docker Desktop: the image and the slim Kestra build, `b
 detected the drift and started `repair`) and `propose` (a correct patch, every gate check passing, then the execution paused for a person).
 The whole loop has now run there once: after the approval form was changed, approving the proposal `r0003` applied the patch (model
 version 1, the build healthy, the marts at 6 days). Before that change, two resumes ended as rejections (see the table below). One run on one
-machine is a demonstration, not a soak test: the schedule has never been left on, and only `rename_amount` has been through Kestra. What
+machine is a demonstration, not a soak test: the schedule has never been left on, and only two changes have been through Kestra: `rename_amount` (patched, approved) and `drop_city` (escalated, the run ended red and the pipeline was left alone). What
 stood in for a run before it happened:
 
 - Every task type, property and input type in `flows/` was checked against the source of Kestra **v2.0.10**, the version

@@ -3,7 +3,7 @@
 Self-healing data pipelines. A daily dlt + dbt pipeline loads an orders feed into DuckDB. When the source changes shape without
 warning, an agent proposes a fix to the dbt staging model, tests it in a sandbox, and applies it or escalates to a human.
 
-Status: **the evaluation is finished and the orchestration is built (Kestra flows, Docker Compose); CI is not built yet.** The flows have been checked against Kestra's source and run once end to end on a laptop (drift detected, patch proposed, a person approved it, the marts recovered); only the `rename_amount` change has been through Kestra so far: see [orchestration/README.md](orchestration/README.md). See [PLAN.md](PLAN.md) for the design and what is done.
+Status: **the evaluation is finished and the orchestration is built (Kestra flows, Docker Compose); CI is not built yet.** The flows have been checked against Kestra's source and run once end to end on a laptop (drift detected, patch proposed, a person approved it, the marts recovered); two changes have been through Kestra so far: `rename_amount` (patched and approved) and `drop_city` (the agent escalated, the run ended red, nothing was changed): see [orchestration/README.md](orchestration/README.md). See [PLAN.md](PLAN.md) for the design and what is done.
 
 ## Result
 
