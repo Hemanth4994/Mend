@@ -1,0 +1,12 @@
+flowchart TB
+    src[(Orders feed<br/>shape can change)] --> ingest[dlt load<br/>into DuckDB]
+    ingest --> build[dbt build<br/>models + tests]
+    build -->|healthy| done([marts updated])
+    build -->|check fails, or a column<br/>appears, empties or vanishes| agent[LangGraph agent<br/>Gemini proposes a fix]
+    agent --> gate{Production gate<br/>sandbox, no answer key}
+    gate -->|patch or no change| person{{A person reads the diff<br/>Kestra pause}}
+    gate -->|cannot fix| esc([Escalate:<br/>run ends red])
+    person -->|approve| apply[Re-check on today's data,<br/>change the model, rebuild]
+    person -->|reject| keep([Pipeline left alone,<br/>marts keep last good numbers])
+    apply -->|healthy| done
+    apply -->|not healthy| undo([Old model put back])
