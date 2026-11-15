@@ -58,6 +58,19 @@ def test_a_flow_uses_only_verified_types_and_properties(path):
         assert {i["type"] for i in pause["onResume"]} <= INPUT_TYPES and "timeout" in pause     # an unanswered approval must end
 
 
+def test_the_approval_form_has_no_default_so_a_bare_resume_cannot_decide():
+    """Twice a person pressed Resume with an on/off switch left off, and the flow rejected the proposal without anyone choosing.
+    A required choice with no default makes Kestra refuse the resume until someone picks."""
+    flow = load(ORCH / "flows" / "repair.yml")
+    (pause,) = [t for t in all_tasks(flow) if t["type"].endswith(".Pause")]
+    (decision,) = [i for i in pause["onResume"] if i["id"] == "decision"]
+    assert decision["type"] == "SELECT" and decision["required"] is True and "defaults" not in decision
+    assert decision["values"] == ["approve", "reject"]
+    (branch,) = [t for t in all_tasks(flow) if t["type"].endswith(".If") and "onResume" in t["condition"]]
+    assert branch["condition"] == "{{ outputs.approval.onResume.decision == 'approve' }}"
+    assert [t["id"] for t in branch["then"]][0] == "apply" and [t["id"] for t in branch["else"]][0] == "reject"
+
+
 @pytest.mark.parametrize("path", FLOWS, ids=lambda p: p.name)
 def test_every_step_runs_the_local_image_and_never_pulls(path):
     for task in (t for t in all_tasks(load(path)) if t["type"].endswith("shell.Commands")):

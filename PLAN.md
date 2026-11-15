@@ -103,7 +103,7 @@ limit (the idea from Rung); everything else waits for approval in Kestra.
 | 4 | Repair agent (LangGraph: gather evidence, propose, validate in sandbox, repair once, apply or escalate), fake-model tests | done, 14 tests (188 total) |
 | 5 | Evaluation runner, dev runs of the three configurations, prompt fixed on dev only, then freeze | done: three dev runs with Gemini, prompt left unchanged after seeing them, tagged `frozen-v1` (218 tests) |
 | 6 | Test runs, failure analysis, results written up | done: one run per configuration on the frozen code (see "Test results"); `v04` re-run for an infrastructure fault, declared above |
-| 7 | Kestra: daily flow, repair flow, approval pause, Docker Compose | built, tested without Docker: `orchestration/` (ops commands + 43 tests, 261 in all, 4 flows, image, compose). Flows checked against Kestra v2.0.10's source, **never run**: the first `docker compose up` is the real test |
+| 7 | Kestra: daily flow, repair flow, approval pause, Docker Compose | built, tested without Docker: `orchestration/` (ops commands + 44 tests, 263 in all, 4 flows, image, compose). Flows checked against Kestra v2.0.10's source. Run for real on the author's Windows laptop through bootstrap, source_change, daily, propose and the approval pause; the approve/apply path was not yet confirmed (two resumes ended as rejections because the first form had an on/off switch that started off, now a required approve/reject choice) |
 | 8 | CI, demo, README, LinkedIn text | |
 | 9 | Optional: AWS (S3 + Terraform), a run on real NYC taxi schema changes | |
 

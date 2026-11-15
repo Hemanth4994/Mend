@@ -29,8 +29,11 @@ Tested here (Linux, no Docker): `mend_ops.py` end to end with real dlt, dbt and 
 `orchestration/tests/`: detection, proposal, approval, stale proposals, undo, reject, escalation, locking, the output lines.
 The Python layer was also run from a clean install laid out like the image (pinned dependencies, no git binary).
 
-**Not tested: Docker and Kestra themselves.** The sandbox this was built in cannot pull images (Docker Hub is blocked), so
-the image has not been built and no flow has been run. What stands in for that run:
+**Docker and Kestra themselves were not testable in the sandbox this was built in** (Docker Hub is blocked). They have since been run
+on a Windows laptop with Docker Desktop: the image and the slim Kestra build, `bootstrap`, `source_change` (`rename_amount`), `daily` (it
+detected the drift and started `repair`) and `propose` (a correct patch, every gate check passing, then the execution paused for a person).
+The approve path (`apply`) has not been confirmed there yet: both resumes so far ended as rejections (see below). What stood in for a run
+before that:
 
 - Every task type, property and input type in `flows/` was checked against the source of Kestra **v2.0.10**, the version
   pinned in `kestra/Dockerfile` (`core`, `plugin-scripts`, and the Docker runner). `tests/test_flows.py` keeps the flows inside
@@ -64,8 +67,8 @@ Without a Gemini key everything works except the model call in the `repair` flow
    `amount` fails, a new column appeared, one went empty). The marts still say day 5: dbt did not publish the bad day.
    The flow starts `repair` and finishes.
 4. **repair** (the new execution, state *Paused*): open the log of `propose`. It has the diff to `stg_orders.sql` and the result of
-   each gate check. Click *Resume*, tick `approve`, add a comment, confirm. `apply` re-checks the patch on today's data, changes
-   the live model, rebuilds. The marts now have 6 days.
+   each gate check. Click *Resume*, choose `approve` in the `decision` list (there is no default: Kestra will not resume until you
+   choose), add a comment, confirm. `apply` re-checks the patch on today's data, changes the live model, rebuilds. The marts now have 6 days.
 5. Try the others from `source_change` (the flow's description says what each one does to the build and what the right answer is).
    What the model answers is up to the model; the right answers are `add_coupon` = "no change needed" (approve it and the alarm
    stops) and `drop_city` = escalate (the execution ends red: nothing can bring the column back). `ts_ist_naive` is different:
@@ -137,6 +140,7 @@ PLAN.md; inside the container (Linux) it does not.
 | The Kestra image build fails at `plugins install` | it downloads from Maven Central: check your internet connection or proxy, then build again |
 | `propose` fails with GOOGLE_API_KEY | run `make_env.py` again with your key, then `restart kestra` |
 | A step fails with a Docker connection error | Kestra starts the step containers through `/var/run/docker.sock` (as in Kestra's own compose file); Docker Desktop must be running and be the engine `docker compose` talks to |
+| You pressed Resume and the execution says the proposal was rejected (`status` shows `open_repair_status=rejected`) | the first version of the form had an `approve` on/off switch that starts off, so a Resume without turning it on rejected the proposal. The form now has a required `decision` list (approve / reject) with no default. Pull, restart Kestra, run `repair` with `force`, and choose `approve` |
 | Anything in `mend_ops` | `docker run --rm -v mend_home:/mend_home mend-ops:local mend-ops status` shows the pipeline from outside Kestra |
 
 ## Files

@@ -7,9 +7,9 @@ description: |
   1. `propose` runs the agent. It reads the evidence, proposes one of three things (patch the staging model, no change needed,
      ask a person) and only a proposal that passes the production gate gets this far. Its log has the diff and the gate result.
      Nothing in the pipeline is changed by this step.
-  2. For a patch or a "no change", the execution pauses. Open the `propose` log, read it, then resume this execution:
-     tick `approve` to apply it, or leave it unticked to reject it. Every proposal waits for a person: in the evaluation no
-     kind of change earned automatic approval.
+  2. For a patch or a "no change", the execution pauses. Open the `propose` log, read it, then click Resume and choose
+     `decision`: approve applies it, reject drops it. There is no default, so Kestra will not resume until you choose.
+     Every proposal waits for a person: in the evaluation no kind of change earned automatic approval.
   3. `apply` checks the proposal again on today's data, changes the live model, rebuilds the marts, and puts the old model
      back if the rebuild is not healthy.
   4. If the agent asks for a person, this execution fails on purpose, so the escalation is red in the UI, not a quiet log line.
@@ -63,21 +63,24 @@ tasks:
         type: io.kestra.plugin.core.flow.Pause
         timeout: PT72H
         description: |
-          Read the log of the `propose` task: the diff and the gate result. Then resume.
-          Tick `approve` to apply the proposal. Leave it unticked to reject it.
+          Read the log of the `propose` task: the diff and the gate result. Then click Resume and choose a decision:
+          approve applies the proposal, reject drops it. There is no default, so the form cannot be sent without a choice.
         onResume:
-          - id: approve
-            type: BOOL
-            defaults: false
-            description: Apply this proposal to the live pipeline.
+          - id: decision
+            type: SELECT
+            required: true
+            values:
+              - approve
+              - reject
+            description: approve = apply this proposal to the live pipeline. reject = drop it and leave the pipeline as it is.
           - id: comment
             type: STRING
             required: false
             description: Why (kept in the repair folder and the event log).
 
-      - id: decision
+      - id: act_on_decision
         type: io.kestra.plugin.core.flow.If
-        condition: "{{ outputs.approval.onResume.approve }}"
+        condition: "{{ outputs.approval.onResume.decision == 'approve' }}"
         then:
           - id: apply
             type: io.kestra.plugin.scripts.shell.Commands

@@ -46,7 +46,7 @@ test split was touched (tag `frozen-v1`). Gemini 3.5 Flash-Lite, 2 attempts per 
 
 ```bash
 pip install -c constraints.txt -e ".[dev]"
-python -m pytest                       # 261 tests, about seven minutes (43 of them are the orchestration tests)
+python -m pytest                       # 263 tests, about eight minutes (44 of them are the orchestration tests)
 python scripts/baseline_report.py      # all 60 cases through dlt and dbt, about two minutes
 ```
 
