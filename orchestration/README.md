@@ -32,16 +32,17 @@ The Python layer was also run from a clean install laid out like the image (pinn
 **Docker and Kestra themselves were not testable in the sandbox this was built in** (Docker Hub is blocked). They have since been run
 on a Windows laptop with Docker Desktop: the image and the slim Kestra build, `bootstrap`, `source_change` (`rename_amount`), `daily` (it
 detected the drift and started `repair`) and `propose` (a correct patch, every gate check passing, then the execution paused for a person).
-The approve path (`apply`) has not been confirmed there yet: both resumes so far ended as rejections (see below). What stood in for a run
-before that:
+The whole loop has now run there once: after the approval form was changed, approving the proposal `r0003` applied the patch (model
+version 1, the build healthy, the marts at 6 days). Before that change, two resumes ended as rejections (see the table below). One run on one
+machine is a demonstration, not a soak test: the schedule has never been left on, and only `rename_amount` has been through Kestra. What
+stood in for a run before it happened:
 
 - Every task type, property and input type in `flows/` was checked against the source of Kestra **v2.0.10**, the version
   pinned in `kestra/Dockerfile` (`core`, `plugin-scripts`, and the Docker runner). `tests/test_flows.py` keeps the flows inside
   that list, and checks that every output a flow reads (`outputs.<task>.vars.<key>`) is a key the command really prints.
 - The compose file follows Kestra's own `docker-compose.yml` for that version, with the changes below.
 
-So the first `docker compose up` on your machine is the real test. If something fails, it is most likely one of the points under
-"If the first run fails".
+If something fails on your machine, it is most likely one of the points under "If the first run fails".
 
 ## Run it (Windows, Docker Desktop with the WSL 2 backend)
 
