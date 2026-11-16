@@ -15,7 +15,7 @@ from ops_helpers import Scripted, clone, patch_answer
 ORCH = Path(__file__).resolve().parents[1]
 FLOWS = sorted((ORCH / "flows").glob("*.yml"))
 # task types and the properties each may use, taken from Kestra v2.0.10 (core and plugin-scripts source); see orchestration/README.md
-COMMON = {"id", "type", "description", "timeout", "disabled", "retry"}
+COMMON = {"id", "type", "description", "timeout", "disabled", "retry", "allowFailure"}
 TASKS = {
     "io.kestra.plugin.scripts.shell.Commands": COMMON | {"containerImage", "taskRunner", "commands", "env", "warningOnStdErr"},
     "io.kestra.plugin.core.log.Log": COMMON | {"message", "level"},
@@ -93,6 +93,20 @@ def test_only_the_repair_step_gets_the_model_key():
             assert has_key == (task["id"] == "propose"), (path.name, task["id"])
 
 
+def test_aws_credentials_reach_only_the_archive_steps_and_a_failed_archive_never_fails_a_flow():
+    archive_steps = 0
+    for path in FLOWS:
+        for task in (t for t in all_tasks(load(path)) if t["type"].endswith("shell.Commands")):
+            env = task.get("env") or {}
+            is_archive = task["commands"] == ["mend-ops --kestra archive"]
+            assert bool({"AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"} & set(env)) == is_archive, (path.name, task["id"])
+            if is_archive:
+                archive_steps += 1
+                assert task["allowFailure"] is True, "AWS being down must not stop the pipeline"
+                assert env["MEND_ARCHIVE_BUCKET"] == "{{ envs.mend_archive_bucket }}"
+    assert archive_steps >= 3                                  # after daily's routing, after a decision, and before an escalation ends the run
+
+
 def test_the_daily_schedule_is_defined_but_off():
     (trigger,) = load(ORCH / "flows" / "daily.yml")["triggers"]
     assert trigger["type"].endswith("trigger.Schedule") and trigger["disabled"] is True and trigger["timezone"] == "Asia/Kolkata"
@@ -130,6 +144,8 @@ def test_no_secret_is_committed_in_orchestration():
             text = path.read_text(encoding="utf-8", errors="ignore")
             assert not re.search(r"AIza[0-9A-Za-z_\-]{20,}", text), path
             assert not re.search(r"(?m)^SECRET_GOOGLE_API_KEY=\S+", text), path
+            assert not re.search(r"\b(AKIA|ASIA)[0-9A-Z]{16}\b", text), path                      # an AWS access key id
+            assert not re.search(r"(?m)^SECRET_AWS_(ACCESS_KEY_ID|SECRET_ACCESS_KEY)=\S+", text), path
 
 
 # ---- the contract between the flows and the command line ---------------------------------------------------------------------
@@ -179,3 +195,17 @@ def test_bootstrap_prints_what_its_flow_reads(tmp_path, capsys):
     assert ops.main(["--home", str(tmp_path / "h"), "--kestra", "bootstrap", "--days", "2"]) == 0
     printed = __import__("json").loads(re.search(r"::(\{.*})::", capsys.readouterr().out).group(1))["outputs"]
     assert referenced_outputs()["bootstrap"] <= set(printed)
+
+
+def test_make_env_writes_exactly_the_variables_env_example_documents_and_encodes_the_secrets():
+    import base64
+    import make_env
+    names = lambda text: {line.split("=", 1)[0] for line in text.splitlines() if "=" in line and not line.startswith("#")}     # noqa: E731
+    example = (ORCH / ".env.example").read_text(encoding="utf-8")
+    archive = {"bucket": "mend-archive-123456789012-ap-south-1", "region": "ap-southeast-2", "access_key_id": "id-123", "secret_access_key": "sec/ret+123"}
+    written = make_env.render("a@b.co", "Passw0rdOK", "gem-key", archive)
+    assert names(written) == names(example) - {"MEND_KESTRA_PORT"} == names(make_env.render("a@b.co", "Passw0rdOK", ""))
+    values = dict(line.split("=", 1) for line in written.splitlines())
+    assert base64.b64decode(values["SECRET_AWS_SECRET_ACCESS_KEY"]).decode() == "sec/ret+123" and values["MEND_ARCHIVE_BUCKET"] == archive["bucket"]
+    assert "sec/ret+123" not in written and "id-123" not in written                     # only the base64 form is written
+    assert not make_env.BUCKET.match("Bad_Bucket") and not make_env.REGION.match("mumbai") and make_env.REGION.match("ap-southeast-2")

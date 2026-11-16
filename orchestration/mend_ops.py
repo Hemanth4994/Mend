@@ -10,6 +10,7 @@ so an orchestrator (Kestra, see flows/) can schedule them, branch on their outpu
     apply         a person approved the proposal: re-check it on today's data, change the live model, rebuild; undo if it fails
     reject        a person declined the proposal
     source-change simulate the source team changing the feed (demo only)
+    archive       copy the marts and the approval records to the S3 bucket in MEND_ARCHIVE_BUCKET (a no-op when it is not set)
 
 The policy is the finding of the evaluation: no kind of change earned autonomy, so every proposal waits for a person.
 The agent and the production gate are the frozen code in src/mend/, used unchanged; this file only decides when to call them.
@@ -26,6 +27,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -465,6 +467,32 @@ def reject(home: Home, repair_id: str, by: str = "", comment: str = "") -> dict:
         return {"rejected": True, "repair_id": repair_id}
 
 
+# ---- archive -------------------------------------------------------------------------------------------------------------
+
+def archive(home: Home, bucket: str | None = None, prefix: str | None = None, client=None) -> dict:
+    """Copy the marts and the approval records (see mend_archive.py) to S3. With no bucket configured it says so and does nothing,
+    so the same flow runs with or without AWS."""
+    import mend_archive as arch
+    target = arch.Target.from_env(bucket, prefix)
+    if target is None:
+        return {"archived": False, "reason": f"{arch.BUCKET_ENV} is not set, so nothing was uploaded"}
+    load_state(home)                                                   # a clear error when there is no pipeline here
+    with tempfile.TemporaryDirectory() as tmp:
+        with locked(home):                                             # the warehouse is read while no load or build is writing it
+            marts = arch.export_marts(home.warehouse, Path(tmp)) if home.warehouse.exists() else []
+            day = _mart_summary(home)["mart_latest_day"] or "unknown"
+        items = [(f"marts/{table}/as_of={day}/{table}.parquet", path) for table, path in marts]
+        for folder in sorted(home.repairs.glob("r*")) if home.repairs.exists() else []:
+            items += [(f"audit/repairs/{folder.name}/{name}", folder / name) for name in ("proposal.json", "decision.json") if (folder / name).exists()]
+        if home.events.exists():
+            items.append(("audit/events.jsonl", home.events))
+        try:
+            counts = arch.upload(target, items, client=client)
+        except arch.ArchiveError as exc:
+            raise OpsError(str(exc)) from None
+    return {"archived": True, "bucket": target.bucket, "prefix": target.prefix, "mart_as_of": day, "files": len(items), **counts}
+
+
 # ---- status --------------------------------------------------------------------------------------------------------------
 
 def status(home: Home) -> dict:
@@ -557,6 +585,9 @@ def parser() -> argparse.ArgumentParser:
         s.add_argument("repair_id")
         s.add_argument("--by", default="")
         s.add_argument("--comment", default="")
+    s = sub.add_parser("archive", help="copy the marts and the approval records to S3 (needs MEND_ARCHIVE_BUCKET)")
+    s.add_argument("--bucket", help="default: $MEND_ARCHIVE_BUCKET")
+    s.add_argument("--prefix", help="folder inside the bucket (default: $MEND_ARCHIVE_PREFIX or mend)")
     s = sub.add_parser("status", help="where the pipeline stands")
     s.add_argument("--json", action="store_true")
     return p
@@ -590,6 +621,8 @@ def run(args: argparse.Namespace) -> dict:
     if cmd in ("apply", "reject"):
         comment = args.comment or os.environ.get("MEND_COMMENT", "")                                       # env: no shell quoting of free text
         return (apply if cmd == "apply" else reject)(home, args.repair_id, by=args.by, comment=comment)
+    if cmd == "archive":
+        return archive(home, bucket=args.bucket, prefix=args.prefix)
     if cmd == "status":
         return status(home)
     raise AssertionError(cmd)

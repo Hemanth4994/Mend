@@ -21,7 +21,7 @@ jobs:
           cache: pip
           cache-dependency-path: constraints.txt
       - name: Install the pinned dependencies
-        run: pip install -c constraints.txt -e ".[agent,dev]"
+        run: pip install -c constraints.txt -e ".[agent,aws,dev]"
       - name: "Run the tests (no API key and no Docker needed; the model is a scripted stand-in)"
         run: python -m pytest -q
 
@@ -37,3 +37,23 @@ jobs:
         run: docker build -t mend-kestra:ci orchestration/kestra
       - name: The image imports the package and the ops command runs
         run: docker run --rm mend-ops:ci mend-ops status --help
+
+  terraform:
+    name: terraform fmt and validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: infra
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+          terraform_wrapper: false
+      - name: Formatting
+        run: terraform fmt -check -recursive -diff
+      - name: Download the AWS provider (no backend, no credentials)
+        run: terraform init -backend=false -input=false
+      - name: Validate (checks every resource, argument and reference against the provider)
+        run: terraform validate

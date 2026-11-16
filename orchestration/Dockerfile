@@ -15,9 +15,9 @@ WORKDIR /app
 COPY pyproject.toml constraints.txt ./
 COPY src ./src
 COPY dbt ./dbt
-RUN pip install -c constraints.txt -e ".[agent]"
+RUN pip install -c constraints.txt -e ".[agent,aws]"
 
-COPY orchestration/mend_ops.py ./orchestration/mend_ops.py
+COPY orchestration/mend_ops.py orchestration/mend_archive.py ./orchestration/
 RUN printf '#!/bin/sh\nexec python /app/orchestration/mend_ops.py "$@"\n' > /usr/local/bin/mend-ops \
  && chmod +x /usr/local/bin/mend-ops \
  && mkdir -p /mend_home

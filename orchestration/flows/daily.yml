@@ -70,6 +70,25 @@ tasks:
         type: io.kestra.plugin.core.log.Log
         message: "Healthy. The marts have {{ outputs.build.vars.mart_days }} days, latest {{ outputs.build.vars.mart_latest_day }}."
 
+  - id: archive
+    type: io.kestra.plugin.scripts.shell.Commands
+    description: Copy the marts and the approval records to S3. It does nothing when no bucket is configured, and a failure here never fails the daily run.
+    allowFailure: true
+    containerImage: mend-ops:local
+    taskRunner:
+      type: io.kestra.plugin.scripts.runner.docker.Docker
+      pullPolicy: NEVER
+      volumes:
+        - mend_home:/mend_home
+    warningOnStdErr: false
+    env:
+      AWS_ACCESS_KEY_ID: "{{ secret('AWS_ACCESS_KEY_ID') }}"
+      AWS_SECRET_ACCESS_KEY: "{{ secret('AWS_SECRET_ACCESS_KEY') }}"
+      MEND_ARCHIVE_BUCKET: "{{ envs.mend_archive_bucket }}"
+      MEND_ARCHIVE_REGION: "{{ envs.mend_archive_region }}"
+    commands:
+      - mend-ops --kestra archive
+
 triggers:
   - id: every_morning
     type: io.kestra.plugin.core.trigger.Schedule

@@ -118,11 +118,49 @@ tasks:
             type: io.kestra.plugin.core.log.Log
             level: WARN
             message: "Rejected. The pipeline is unchanged and still in drift; the marts keep their last good numbers."
+
+      - id: archive
+        type: io.kestra.plugin.scripts.shell.Commands
+        description: Copy the approval records (and the marts) to S3. It does nothing when no bucket is configured, and a failure here never fails the flow.
+        allowFailure: true
+        containerImage: mend-ops:local
+        taskRunner:
+          type: io.kestra.plugin.scripts.runner.docker.Docker
+          pullPolicy: NEVER
+          volumes:
+            - mend_home:/mend_home
+        warningOnStdErr: false
+        env:
+          AWS_ACCESS_KEY_ID: "{{ secret('AWS_ACCESS_KEY_ID') }}"
+          AWS_SECRET_ACCESS_KEY: "{{ secret('AWS_SECRET_ACCESS_KEY') }}"
+          MEND_ARCHIVE_BUCKET: "{{ envs.mend_archive_bucket }}"
+          MEND_ARCHIVE_REGION: "{{ envs.mend_archive_region }}"
+        commands:
+          - mend-ops --kestra archive
     else:
       - id: escalation
         type: io.kestra.plugin.core.flow.If
         condition: "{{ outputs.propose.vars.outcome == 'escalate' }}"
         then:
+          - id: archive_escalation
+            type: io.kestra.plugin.scripts.shell.Commands
+            description: Copy the approval records (and the marts) to S3. It does nothing when no bucket is configured, and a failure here never fails the flow.
+            allowFailure: true
+            containerImage: mend-ops:local
+            taskRunner:
+              type: io.kestra.plugin.scripts.runner.docker.Docker
+              pullPolicy: NEVER
+              volumes:
+                - mend_home:/mend_home
+            warningOnStdErr: false
+            env:
+              AWS_ACCESS_KEY_ID: "{{ secret('AWS_ACCESS_KEY_ID') }}"
+              AWS_SECRET_ACCESS_KEY: "{{ secret('AWS_SECRET_ACCESS_KEY') }}"
+              MEND_ARCHIVE_BUCKET: "{{ envs.mend_archive_bucket }}"
+              MEND_ARCHIVE_REGION: "{{ envs.mend_archive_region }}"
+            commands:
+              - mend-ops --kestra archive
+
           - id: escalate
             type: io.kestra.plugin.core.execution.Fail
             errorMessage: "Mend asks for a person ({{ outputs.propose.vars.repair_id }}): {{ outputs.propose.vars.reason }}"

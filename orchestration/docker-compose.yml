@@ -62,6 +62,11 @@ services:
       # A Kestra secret is an environment variable SECRET_<NAME> holding the base64 of the value; flows read it as secret('<NAME>').
       # make_env.py writes it. Empty is allowed: everything but the model call still works.
       SECRET_GOOGLE_API_KEY: ${SECRET_GOOGLE_API_KEY:-}
+      # Optional S3 archive (see infra/). Only the `archive` steps of the flows read these. Empty means the archive step does nothing.
+      SECRET_AWS_ACCESS_KEY_ID: ${SECRET_AWS_ACCESS_KEY_ID:-}
+      SECRET_AWS_SECRET_ACCESS_KEY: ${SECRET_AWS_SECRET_ACCESS_KEY:-}
+      ENV_MEND_ARCHIVE_BUCKET: ${MEND_ARCHIVE_BUCKET:-}
+      ENV_MEND_ARCHIVE_REGION: ${MEND_ARCHIVE_REGION:-}
       KESTRA_CONFIGURATION: |
         datasources:
           postgres:
