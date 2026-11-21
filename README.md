@@ -80,7 +80,7 @@ evaluation numbers above come from the 60-case benchmark, not from these runs. A
 
 ```bash
 pip install -c constraints.txt -e ".[agent,dev]"
-python -m pytest                       # 274 tests, about nine minutes (55 of them are the orchestration tests); no API key or Docker needed
+python -m pytest                       # 275 tests, about nine minutes (56 of them are the orchestration tests); no API key or Docker needed
 python scripts/baseline_report.py      # all 60 cases through dlt and dbt, about two minutes
 ```
 

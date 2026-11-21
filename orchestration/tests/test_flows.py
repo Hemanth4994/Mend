@@ -209,3 +209,20 @@ def test_make_env_writes_exactly_the_variables_env_example_documents_and_encodes
     assert base64.b64decode(values["SECRET_AWS_SECRET_ACCESS_KEY"]).decode() == "sec/ret+123" and values["MEND_ARCHIVE_BUCKET"] == archive["bucket"]
     assert "sec/ret+123" not in written and "id-123" not in written                     # only the base64 form is written
     assert not make_env.BUCKET.match("Bad_Bucket") and not make_env.REGION.match("mumbai") and make_env.REGION.match("ap-southeast-2")
+
+
+def test_make_env_keeps_a_port_that_was_added_by_hand(tmp_path, monkeypatch):
+    """Re-running make_env once dropped the MEND_KESTRA_PORT line, which silently moved Kestra from 8088 back to 8080."""
+    import make_env
+    assert make_env.kept_port("A=1\nMEND_KESTRA_PORT=8088\nB=2\n") == "8088"
+    assert make_env.kept_port("# MEND_KESTRA_PORT=8088\n") is None                      # a comment is not a setting
+    assert make_env.kept_port("MEND_KESTRA_PORT=99999\n") is None and make_env.kept_port("MEND_KESTRA_PORT=abc\n") is None
+    env = tmp_path / ".env"
+    env.write_text("MEND_KESTRA_USER=old@b.co\nMEND_KESTRA_PORT=8088\n", encoding="utf-8")
+    monkeypatch.setattr(make_env, "ENV", env)
+    answers, secrets = iter(["y", "new@b.co", ""]), iter(["Passw0rdOK", ""])            # overwrite, login, no bucket / password, no Gemini key
+    monkeypatch.setattr("builtins.input", lambda prompt="": next(answers))
+    monkeypatch.setattr(make_env.getpass, "getpass", lambda prompt="": next(secrets))
+    assert make_env.main() == 0
+    text = env.read_text(encoding="utf-8")
+    assert "MEND_KESTRA_PORT=8088\n" in text and "MEND_KESTRA_USER=new@b.co" in text and "old@b.co" not in text

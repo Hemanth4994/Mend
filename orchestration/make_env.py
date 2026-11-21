@@ -3,7 +3,7 @@
     python orchestration/make_env.py
 
 Keys are read with getpass (not echoed, not in your shell history, not in the chat). The file is ignored by git.
-Re-run it any time to change the login or the key; it asks before overwriting.
+Re-run it any time to change the login or the key; it asks before overwriting, and keeps a MEND_KESTRA_PORT line you added by hand.
 """
 from __future__ import annotations
 
@@ -34,14 +34,24 @@ BUCKET = re.compile(r"^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$")
 REGION = re.compile(r"^[a-z]{2}(-[a-z]+)+-\d$")
 
 
-def render(user: str, password: str, gemini_key: str, archive: dict | None = None) -> str:
-    """archive: {bucket, region, access_key_id, secret_access_key}, or None for no S3 archive."""
+PORT_LINE = re.compile(r"^MEND_KESTRA_PORT=(\d{1,5})[ \t]*$", re.MULTILINE)
+
+
+def kept_port(old_env: str) -> str | None:
+    """The MEND_KESTRA_PORT line someone added to an existing .env by hand (for when 8080 is taken), if it is a usable port."""
+    found = PORT_LINE.search(old_env)
+    return found.group(1) if found and 1 <= int(found.group(1)) <= 65535 else None
+
+
+def render(user: str, password: str, gemini_key: str, archive: dict | None = None, port: str | None = None) -> str:
+    """archive: {bucket, region, access_key_id, secret_access_key}, or None for no S3 archive. port: a MEND_KESTRA_PORT to keep."""
     a = archive or {}
     return (f"MEND_KESTRA_USER={user}\nMEND_KESTRA_PASSWORD={password}\n"
             f"SECRET_GOOGLE_API_KEY={encode_secret(gemini_key) if gemini_key else ''}\n"
             f"MEND_ARCHIVE_BUCKET={a.get('bucket', '')}\nMEND_ARCHIVE_REGION={a.get('region', '')}\n"
             f"SECRET_AWS_ACCESS_KEY_ID={encode_secret(a['access_key_id']) if a else ''}\n"
-            f"SECRET_AWS_SECRET_ACCESS_KEY={encode_secret(a['secret_access_key']) if a else ''}\n")
+            f"SECRET_AWS_SECRET_ACCESS_KEY={encode_secret(a['secret_access_key']) if a else ''}\n"
+            + (f"MEND_KESTRA_PORT={port}\n" if port else ""))
 
 
 def ask_archive() -> dict | None:
@@ -62,9 +72,12 @@ def ask_archive() -> dict | None:
 
 
 def main() -> int:
-    if ENV.exists() and input(f"{ENV} exists. Overwrite? [y/N] ").strip().lower() != "y":
-        print("left it as it was")
-        return 0
+    port = None
+    if ENV.exists():
+        if input(f"{ENV} exists. Overwrite? [y/N] ").strip().lower() != "y":
+            print("left it as it was")
+            return 0
+        port = kept_port(ENV.read_text(encoding="utf-8", errors="replace"))      # a port added by hand must survive the rewrite
     user = input("Kestra login (an email address, local only): ").strip()
     if not EMAIL.match(user):
         print("that is not an email address Kestra will accept")
@@ -80,9 +93,10 @@ def main() -> int:
     except ValueError as exc:
         print(exc)
         return 1
-    ENV.write_text(render(user, password, key, archive), encoding="utf-8")
+    ENV.write_text(render(user, password, key, archive, port), encoding="utf-8")
     print(f"wrote {ENV}" + ("" if key else " (no Gemini key: the repair step will say so until you re-run this)")
-          + ("" if archive else " (no S3 archive: the archive steps will do nothing)"))
+          + ("" if archive else " (no S3 archive: the archive steps will do nothing)")
+          + (f" (kept MEND_KESTRA_PORT={port})" if port else ""))
     return 0
 
 
