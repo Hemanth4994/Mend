@@ -1,7 +1,7 @@
 # Copy to terraform.tfvars (which git ignores) and fill in.
 alert_email = "you@example.com"
 
-# The Region your account was assigned: AWS Console, top right, Account, "AWS Settings". A new free-plan account in India is usually ap-southeast-2 (Sydney).
+# The Region your project was assigned: AWS Settings, Projects, open the project, "Additional info". A new free-plan project in India is ap-southeast-2 (Sydney).
 region = "ap-southeast-2"
 
 # monthly_budget_usd = 5
