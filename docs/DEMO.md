@@ -24,6 +24,9 @@
 Optional extra (30 seconds): bootstrap again, run `source_change` with `drop_city`, run `daily`. The `repair` run ends **red**: the agent
 escalates, because no patch can bring a dropped column back. A red run is on purpose, so an escalation cannot go unnoticed.
 
+Say-only line about AWS (do not show the bucket on screen: its name contains your AWS account number): "Every proposal and every approval is also copied to a
+versioned S3 bucket, by an IAM user that can only add files, so the record cannot be rewritten by the program that wrote it."
+
 Recording on Windows: **Win + Alt + R** starts and stops the Xbox Game Bar recorder for the focused window (files land in `Videos\Captures`).
 OBS Studio works too. Keep it under 2 minutes and upload it unlisted to YouTube, or attach it to a LinkedIn post, then link it from the README.
 
@@ -52,6 +55,10 @@ applies and the rebuild is not healthy, it puts the old model back and fails the
 **What did the Kestra run actually show?** Two cases on my laptop: `rename_amount` (patched, approved, the marts recovered, next day healthy) and
 `drop_city` (escalated, red run, nothing changed). I had to fix one design flaw along the way: the approval form had an on/off switch that started off, so a
 bare Resume silently rejected the proposal. It is now a required approve/reject choice with no default.
+
+**What does the AWS part do?** Terraform builds a private, encrypted, versioned S3 bucket, an IAM user that can only put and get files under one folder, and a budget
+alarm. After a run, Mend copies the marts and every proposal and decision there. I applied it to a free-plan AWS account and a Kestra run uploaded the files; a
+second run uploaded only what had changed. It is an audit archive of a few kilobytes a day, not a data lake.
 
 **What would you do next?** Run it on real schema changes (a public dataset whose schema really changed), measure several changes in a row, show a
 column-by-column summary of the patch instead of a raw diff (the model tends to rewrite the whole file on one line), and leave the schedule on for a week.
