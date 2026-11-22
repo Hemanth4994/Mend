@@ -72,7 +72,7 @@ evaluation numbers above come from the 60-case benchmark, not from these runs. A
 - `src/mend/agent.py`: the LangGraph repair agent (gather, propose, gate, one repair, then patch, no_change or escalate). The model is an injected
   function, so the graph is tested with a scripted stand-in and no API key (`tests/test_agent.py`).
 - `orchestration/`: the live pipeline. `mend_ops.py` (ingest, build, repair, apply, reject, with a lock and an undo), four Kestra flows (daily run, repair with an approval pause, a bootstrap, a demo source change), a Dockerfile and a Compose file. Every proposal waits for a person. An optional `archive` step copies the marts and the approval records to S3.
-- `infra/`: Terraform for that S3 archive: a private, encrypted, versioned bucket, an IAM user that can only put and get under one folder, and a budget alarm. Tested against a fake S3 and CI-validated, then applied once to a real free-plan AWS project (10 resources, budget included); the upload from Kestra to that bucket is the next check ([runbook](infra/README.md)).
+- `infra/`: Terraform for that S3 archive: a private, encrypted, versioned bucket, an IAM user that can only put and get under one folder, and a budget alarm. Tested against a fake S3 and CI-validated, then applied to a real free-plan AWS project (10 resources, budget included); a Kestra `daily` run has uploaded files to that bucket as the write-only user ([runbook](infra/README.md)).
 - `scripts/baseline_report.py`: runs every case through the unrepaired pipeline. Result: 34 break loudly, 11 pass every test with wrong
   numbers but show a schema change, 1 is invisible to every check, and the 14 harmless ones are all absorbed by dlt.
 

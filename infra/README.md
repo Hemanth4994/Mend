@@ -22,7 +22,10 @@ Terraform's state; you create the key by hand below.
 - **Applied for real:** on 20 November 2026, `terraform apply` built all 10 resources (the bucket and its settings, the writer user and its policy, and the
   budget) in a new project on a free-plan AWS account, in `ap-southeast-2`, with Terraform 1.17 and AWS provider 6.73. The plan before it said
   `10 to add, 0 to change, 0 to destroy`.
-- **Not yet confirmed:** the Kestra `archive` step uploading to that bucket as the writer user (step 6 and 7). This line changes when someone has seen it work.
+- **Confirmed through Kestra:** on 21 November 2026 the `archive` step of a `daily` run, using the `mend-archive-writer` key, reported
+  `archived=True ... files=3, uploaded=3, unchanged=0, bytes=3771` for the bucket Terraform built. `aws s3 ls` then showed
+  `mend/marts/fct_daily_revenue/as_of=2026-03-07/fct_daily_revenue.parquet`, `mend/audit/repairs/r0001/proposal.json` and `mend/audit/events.jsonl`. A second `daily` run
+  uploaded only what had changed (`uploaded=2, unchanged=1`: the new day's marts and the longer event log, not the unchanged proposal).
 
 ## 1. Before you start (once)
 
@@ -97,8 +100,8 @@ docker compose -f orchestration/docker-compose.yml --env-file orchestration/.env
 ```
 
 The first build takes a few minutes (about six on a laptop) because the image now includes boto3. Then, in Kestra, run **daily**: it ends with an `archive` step.
-Its log says `archive: archived=True ... uploaded=N`. N is 2 on a fresh pipeline (the marts and the event log) and larger once repairs exist, because each repair adds a
-proposal and a decision. A later run uploads only what changed (the new day's marts, the longer event log) and reports the rest as `unchanged`.
+Its log says `archive: archived=True ... uploaded=N`. N was 3 on the first real run (and is larger once repairs exist, because each repair adds a
+proposal and a decision). A later run uploads only what changed (the new day's marts, the longer event log) and reports the rest as `unchanged`.
 Approving a repair in the **repair** flow archives its proposal and decision too.
 
 ## 7. Look at what is in the bucket
