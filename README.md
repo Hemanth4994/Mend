@@ -24,6 +24,32 @@ flowchart TB
     apply -->|not healthy| undo([Old model put back])
 ```
 
+## How it runs
+
+```mermaid
+flowchart TB
+    person(("A person"))
+
+    subgraph compose["Docker Compose on one machine"]
+        kestra["Kestra v2.0.10<br/>UI and flow runner"] --- pg[("Postgres<br/>Kestra's own state")]
+        kestra --> daily["daily flow<br/>ingest, build, route, archive<br/>(run by hand; a schedule is included but off)"]
+        daily -->|drift found| repair["repair flow<br/>propose, pause for a person,<br/>apply or reject, archive"]
+        daily --> steps["mend-ops step containers, one per task<br/>dlt, dbt, LangGraph agent, gate"]
+        repair --> steps
+        steps --> vol[("mend_home volume<br/>DuckDB warehouse, dlt state, live dbt project,<br/>proposals, event log")]
+    end
+
+    person -->|Resume: approve or reject| repair
+    steps -->|proposal request| gemini["Gemini API"]
+    steps -->|archive| iam
+
+    subgraph aws["AWS, built with Terraform"]
+        iam["IAM user<br/>put and get under one folder only"] --> s3[("S3 bucket<br/>marts, proposals, decisions, event log<br/>private, encrypted, versioned")]
+    end
+```
+
+Kestra starts a short-lived container from the `mend-ops` image for every step, and all of them share one volume that holds the warehouse, the live dbt project and the proposals. The `repair` flow pauses until a person chooses approve or reject. The S3 archive is optional: without a bucket the `archive` steps do nothing. The `bootstrap` and `source_change` flows only set up the demo.
+
 ## Result
 
 60 source changes (30 dev, 30 test) run through real dlt and dbt, scored against an answer key, one run per configuration on code frozen before the
