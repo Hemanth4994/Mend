@@ -60,5 +60,9 @@ bare Resume silently rejected the proposal. It is now a required approve/reject 
 alarm. After a run, Mend copies the marts and every proposal and decision there. I applied it to a free-plan AWS account and a Kestra run uploaded the files; a
 second run uploaded only what had changed. It is an audit archive of a few kilobytes a day, not a data lake.
 
-**What would you do next?** Run it on real schema changes (a public dataset whose schema really changed), measure several changes in a row, show a
+**Have you seen real schema drift?** I read the schema of 213 monthly NYC taxi files (2009 to 2026): 30 months changed it, 23 of them only INTEGER/DOUBLE flips in
+fee columns that were empty at the time, and two were rename waves in 2010 and 2011. In 2025 `total_amount` started to include a new fee, which fails no build. I did not run
+the agent on it: the agent and the gate are written around the orders model, so that needs a generalised contract and prompt. Details: [docs/NYC.md](NYC.md).
+
+**What would you do next?** Run the agent itself on real schema changes (the NYC files above, with a generalised contract and prompt), measure several changes in a row, show a
 column-by-column summary of the patch instead of a raw diff (the model tends to rewrite the whole file on one line), and leave the schedule on for a week.

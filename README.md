@@ -82,6 +82,14 @@ Kestra v2.0.10 and Docker Desktop on a Windows laptop, using Gemini for the prop
 What this is not: one run of each case on one machine by the person who wrote it. The schedule has never been left on, and the
 evaluation numbers above come from the 60-case benchmark, not from these runs. A 2-minute demo script and likely interview questions are in [docs/DEMO.md](docs/DEMO.md).
 
+## Real schema drift
+
+To see what real drift looks like, I read the schema of every monthly NYC yellow taxi file from 2009 to 2026 (213 files, footers only) and the first 1,000 rows
+of 12 of them. Of the 30 months that changed schema, 23 were type flips (22 of them in fee columns that were empty at the time), 2 were rename waves in 2010 and 2011,
+2 added a column (2025, 2026), 2 were a pandas index artifact and 1 changed a column's case. Since 2011 nothing a revenue model reads was renamed or removed, but
+`total_amount` now includes a fee that did not exist before 2025, a change that fails no build. I did **not** run Mend's agent on these files: it and its gate are
+written around the orders model and frozen with `frozen-v1`. Details, numbers and limits: [docs/NYC.md](docs/NYC.md).
+
 ## What exists today
 
 - `src/mend/feed.py`: the orders feed, deterministic.
@@ -99,6 +107,7 @@ evaluation numbers above come from the 60-case benchmark, not from these runs. A
   function, so the graph is tested with a scripted stand-in and no API key (`tests/test_agent.py`).
 - `orchestration/`: the live pipeline. `mend_ops.py` (ingest, build, repair, apply, reject, with a lock and an undo), four Kestra flows (daily run, repair with an approval pause, a bootstrap, a demo source change), a Dockerfile and a Compose file. Every proposal waits for a person. An optional `archive` step copies the marts and the approval records to S3.
 - `infra/`: Terraform for that S3 archive: a private, encrypted, versioned bucket, an IAM user that can only put and get under one folder, and a budget alarm. Tested against a fake S3 and CI-validated, then applied to a real free-plan AWS project (10 resources, budget included); a Kestra `daily` run has uploaded files to that bucket as the write-only user ([runbook](infra/README.md)).
+- `explore/`: exploration on real data, outside the frozen folders: the NYC taxi schema timeline, a sampler and a summary ([docs/NYC.md](docs/NYC.md)); results in `results/nyc/`.
 - `scripts/baseline_report.py`: runs every case through the unrepaired pipeline. Result: 34 break loudly, 11 pass every test with wrong
   numbers but show a schema change, 1 is invisible to every check, and the 14 harmless ones are all absorbed by dlt.
 
