@@ -1,19 +1,26 @@
 """List how the schema of the NYC TLC yellow taxi files changes from month to month, reading only the Parquet footers.
 
-    python scripts/nyc_schema_timeline.py                                 # 2009-01 .. 2026-09, every month
-    python scripts/nyc_schema_timeline.py --start 2018-01 --end 2020-12   # a part of it
-    python scripts/nyc_schema_timeline.py --every 6                       # a quicker look: every sixth month
+    python explore/nyc_schema_timeline.py                                 # 2009-01 .. 2026-09, every month
+    python explore/nyc_schema_timeline.py --start 2018-01 --end 2020-12   # a part of it
+    python explore/nyc_schema_timeline.py --every 6                       # a quicker look: every sixth month
+    python explore/nyc_schema_timeline.py --resume                        # keep the months already read, fetch only the ones that failed
+    python explore/nyc_schema_timeline.py --pause 2 --give-up-after 3     # slower, and stop early if the server starts refusing
 
-This is exploration for the real-data run, not part of the evaluated code and not part of the test suite. It reads no trip rows: for each month
+This is exploration for the real-data run, not part of the evaluated code and not part of the test suite. It lives in explore/, not scripts/,
+because scripts/ is one of the folders the frozen-v1 guard in run_eval.py compares with the tag. It reads no trip rows: for each month
 DuckDB fetches the footer of the file (a few KB) to get the column names, types and row count, so it needs the internet (the files are on
 CloudFront) but almost no bandwidth. It writes results/nyc/yellow_schema_timeline.json and prints one line per month where the schema changed.
-A month that cannot be read (not published yet, no network) is recorded as an error and skipped when comparing.
+A month that cannot be read (not published yet, no network, refused by the server) is recorded as an error and skipped when comparing; the
+summary line says why, once. It waits --pause seconds between months so that a few hundred requests do not look like an attack to the server.
 """
 from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
+import time
+from collections import Counter
 from pathlib import Path
 
 DEFAULT_BASE = "https://d37ci6vzurychx.cloudfront.net/trip-data"
@@ -57,8 +64,27 @@ def changes(prev: dict, cur: dict) -> dict:
     }
 
 
-def timeline(con, base: str, months: list[str]) -> dict:
-    described = {m: describe(con, base, m) for m in months}
+def why_unreadable(months: dict) -> Counter:
+    """The error texts of the unreadable months, with the file's own URL removed so that equal causes count together."""
+    return Counter(re.sub(r"'https?://[^']*'", "<url>", d["error"]) for d in months.values() if "error" in d)
+
+
+def timeline(con, base: str, months: list[str], previous: dict | None = None, pause: float = 0.0, give_up_after: int = 0) -> dict:
+    """`previous` maps month -> an earlier result: a month that was read then is reused, not fetched again.
+    `give_up_after` N > 0: stop asking the server once N fetched months in a row have failed (a server that refuses us is not helped by
+    more requests); the months left are recorded as not tried, so a later --resume run picks them up."""
+    described, streak = {}, 0
+    for m in months:
+        if previous and m in previous and "error" not in previous[m]:
+            described[m] = previous[m]
+            continue
+        if give_up_after and streak >= give_up_after:
+            described[m] = {"error": f"not tried: stopped after {give_up_after} months in a row failed"}
+            continue
+        described[m] = describe(con, base, m)
+        streak = streak + 1 if "error" in described[m] else 0
+        if pause:
+            time.sleep(pause)
     log, last = [], None
     for m in months:
         d = described[m]
@@ -79,6 +105,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--every", type=int, default=1, help="look at every Nth month")
     ap.add_argument("--base", default=DEFAULT_BASE, help="where yellow_tripdata_YYYY-MM.parquet lives (a URL or a folder)")
     ap.add_argument("--out", default=str(OUT))
+    ap.add_argument("--pause", type=float, default=0.5, help="seconds to wait after each month that is fetched")
+    ap.add_argument("--resume", action="store_true", help="reuse the months already read in --out and fetch only the rest")
+    ap.add_argument("--give-up-after", type=int, default=5, help="stop after this many months in a row fail (0: never stop)")
     args = ap.parse_args(argv)
 
     import duckdb
@@ -87,20 +116,33 @@ def main(argv: list[str] | None = None) -> int:
         con.execute("install httpfs")
         con.execute("load httpfs")
     months = month_range(args.start, args.end, args.every)
-    print(f"reading the footers of {len(months)} files from {args.base} ...", flush=True)
-    result = timeline(con, args.base, months)
-
     out = Path(args.out)
+    previous = None
+    if args.resume and out.exists():
+        old = json.loads(out.read_text(encoding="utf-8"))
+        if old.get("base") == args.base:
+            previous = old["months"]
+            kept = sum(1 for m in months if m in previous and "error" not in previous[m])
+            print(f"--resume: keeping {kept} months already read in {out}", flush=True)
+        else:
+            print(f"--resume ignored: {out} was made from another --base", flush=True)
+    print(f"reading the footers of {len(months)} files from {args.base} ...", flush=True)
+    result = timeline(con, args.base, months, previous, args.pause, args.give_up_after)
+
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(result, indent=1), encoding="utf-8")
     errors = sorted(m for m, d in result["months"].items() if "error" in d)
-    print(f"wrote {out}: {len(months) - len(errors)} months read, {len(errors)} unreadable" + (f" ({', '.join(errors[:5])}{' ...' if len(errors) > 5 else ''})" if errors else ""))
+    print(f"wrote {out}: {len(months) - len(errors)} months read, {len(errors)} unreadable" + (f" ({errors[0]} .. {errors[-1]})" if errors else ""))
+    for reason, n in why_unreadable(result["months"]).most_common(3):
+        print(f"  {n} x {reason}")
     for c in result["changes"]:
         parts = ([f"+{x}" for x in c["added"]] + [f"-{x}" for x in c["removed"]] + [f"{o}->{n} (case)" for o, n in c["case_renamed"]]
                  + [f"{col}: {old}->{new}" for col, old, new in c["retyped"]])
         print(f"{c['from']} -> {c['to']}: " + ", ".join(parts))
     if not result["changes"]:
         print("no schema changes between the months that could be read")
+    if errors:
+        print("some months were not read: wait a few minutes and run the same command again with --resume (it keeps what was read)")
     return 0 if len(errors) < len(months) else 1
 
 
