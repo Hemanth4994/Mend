@@ -68,6 +68,12 @@ test split was touched (tag `frozen-v1`). Gemini 3.5 Flash-Lite, 2 attempts per 
 - Limits: synthetic data written by the same author as the answer key, one run per configuration, one small model, 30 cases. Details and the failure
   analysis are in [PLAN.md](PLAN.md); one case (`v04`) had to be re-run after a Windows-only infrastructure fault, declared there.
 
+## The starting point: no agent
+
+Before any repair, all 60 source changes go through the plain pipeline (real dlt and dbt, no agent). Of the 60, 34 fail a dbt check, 11 change the schema but fail nothing, 1 shows no sign at all, and 14 are harmless controls. The run took 138 seconds. The screenshot is the real output of `python scripts/baseline_report.py` (10 of the 60 case lines are shown).
+
+![Terminal output of baseline_report.py: each source change, whether dbt failed, and the schema signals, ending with the counts per group](docs/img/baseline-report.png)
+
 ## What ran for real
 
 Kestra v2.0.10 and Docker Desktop on a Windows laptop, using Gemini for the proposals ([how to run it](orchestration/README.md)):
